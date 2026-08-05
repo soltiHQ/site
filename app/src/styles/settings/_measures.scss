@@ -1,0 +1,15 @@
+// Body measure is guideline-backed; the remaining values parameterize this site layout.
+$measures: (
+  body: 35rem,
+  wide: 48rem,
+  table: 42rem,
+  view-side: 18rem,
+  label-column: 8rem,
+  placeholder: 12rem,
+);
+
+@mixin emit-measures {
+  @each $name, $value in $measures {
+    --measure-#{$name}: #{$value};
+  }
+}

@@ -1,0 +1,22 @@
+@layer elements {
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-caption);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: var(--tracking-table);
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  th,
+  td {
+    padding: var(--sp-4);
+    border-bottom: var(--stroke-hair) solid var(--color-border);
+    vertical-align: top;
+  }
+}

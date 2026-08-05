@@ -1,0 +1,28 @@
+@layer components {
+  .wordmark {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--control-wordmark-gap);
+    color: var(--color-text);
+    font-family: var(--font-display);
+    font-size: var(--control-wordmark-size);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--tracking-heading);
+    line-height: 1;
+  }
+
+  .wordmark--inverse {
+    color: var(--color-text-inverse);
+  }
+
+  .wordmark__beat {
+    width: var(--control-wordmark-beat);
+    height: var(--control-wordmark-beat);
+    border-radius: 50%;
+    background: var(--color-accent);
+  }
+
+  .wordmark--inverse .wordmark__beat {
+    background: var(--color-accent-on-dark);
+  }
+}

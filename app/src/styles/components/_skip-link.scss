@@ -1,0 +1,21 @@
+@layer components {
+  .skip-link {
+    position: fixed;
+    z-index: var(--layer-skip-link);
+    top: var(--sp-3);
+    left: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    border-radius: var(--radius-node);
+    background: var(--color-canvas-inverse);
+    color: var(--color-text-inverse);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-caption);
+    text-decoration: none;
+    transform: translateY(-180%);
+    transition: transform var(--duration-fast) var(--ease-standard);
+  }
+
+  .skip-link:focus {
+    transform: translateY(0);
+  }
+}

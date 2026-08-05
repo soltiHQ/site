@@ -1,0 +1,58 @@
+@use '../tools';
+
+@layer components {
+  .c-surface {
+    @include tools.canvas-context;
+
+    min-width: 0;
+    padding: var(--surface-padding, var(--sp-5));
+    border-radius: var(--radius-card);
+    background: var(--color-canvas);
+    color: var(--color-text);
+  }
+
+  .c-surface--bordered {
+    border: var(--stroke-hair) solid var(--color-border);
+  }
+
+  .c-surface--subtle {
+    background: var(--color-surface);
+  }
+
+  .c-surface--inverse {
+    @include tools.inverse-context;
+
+    border-color: var(--color-border-inverse);
+    background: var(--color-canvas-inverse);
+    color: var(--color-text-inverse);
+  }
+
+  .c-panel {
+    @include tools.canvas-context;
+
+    overflow: hidden;
+    border: var(--stroke-hair) solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-canvas);
+  }
+
+  .c-panel__header,
+  .c-panel__body,
+  .c-panel__footer {
+    padding: var(--sp-4) var(--sp-5);
+  }
+
+  .c-panel__header {
+    border-bottom: var(--stroke-hair) solid var(--color-border);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-caption);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: var(--tracking-table);
+    text-transform: uppercase;
+  }
+
+  .c-panel__footer {
+    border-top: var(--stroke-hair) solid var(--color-border);
+    background: var(--color-surface);
+  }
+}

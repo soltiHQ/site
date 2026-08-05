@@ -1,0 +1,27 @@
+@layer components {
+  .c-badge {
+    display: inline-flex;
+    min-height: var(--control-badge-height);
+    align-items: center;
+    gap: var(--sp-2);
+    padding-inline: var(--sp-3);
+    border: var(--stroke-hair) solid var(--color-border);
+    border-radius: var(--radius-node);
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-caption);
+  }
+
+  .c-badge--live::before {
+    width: var(--control-status-dot);
+    height: var(--control-status-dot);
+    border-radius: 50%;
+    background: var(--color-accent);
+    content: '';
+  }
+
+  .c-badge--danger {
+    border-color: color-mix(in srgb, var(--color-danger) 60%, var(--color-border));
+    color: var(--color-danger-text);
+  }
+}

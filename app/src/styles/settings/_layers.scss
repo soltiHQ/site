@@ -1,0 +1,11 @@
+$layers: (
+  base: 0,
+  chrome: 100,
+  skip-link: 200,
+);
+
+@mixin emit-layers {
+  @each $name, $value in $layers {
+    --layer-#{$name}: #{$value};
+  }
+}

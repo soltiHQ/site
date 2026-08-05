@@ -1,0 +1,10 @@
+$radii: (
+  node: 6px,
+  card: 10px,
+);
+
+@mixin emit-radii {
+  @each $name, $value in $radii {
+    --radius-#{$name}: #{$value};
+  }
+}

@@ -1,0 +1,11 @@
+$strokes: (
+  hair: 1px,
+  node: 1.5px,
+  edge: 2px,
+);
+
+@mixin emit-strokes {
+  @each $name, $value in $strokes {
+    --stroke-#{$name}: #{$value};
+  }
+}

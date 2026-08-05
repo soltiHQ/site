@@ -1,0 +1,10 @@
+// The supplied guidelines define a flat system and contain no shadow values.
+$shadows: (
+  none: none,
+);
+
+@mixin emit-shadows {
+  @each $name, $value in $shadows {
+    --shadow-#{$name}: #{$value};
+  }
+}

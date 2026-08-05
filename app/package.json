@@ -1,0 +1,29 @@
+{
+  "name": "@soltihq/site-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run type-check && vite build",
+    "type-check": "vue-tsc --build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "3.5.18",
+    "vue-router": "4.5.1"
+  },
+  "devDependencies": {
+    "@tsconfig/node22": "22.0.2",
+    "@types/node": "24.1.0",
+    "@vitejs/plugin-vue": "6.0.1",
+    "@vue/tsconfig": "0.7.0",
+    "sass": "1.89.2",
+    "typescript": "5.8.3",
+    "vite": "7.0.6",
+    "vue-tsc": "3.0.4"
+  }
+}

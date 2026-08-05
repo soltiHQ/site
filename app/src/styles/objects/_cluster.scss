@@ -1,0 +1,8 @@
+@layer objects {
+  .o-cluster {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: var(--cluster-align, center);
+    gap: var(--cluster-space, var(--sp-3));
+  }
+}

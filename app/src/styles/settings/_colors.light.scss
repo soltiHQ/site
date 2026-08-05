@@ -1,0 +1,67 @@
+// The brand hex values are verified against the supplied guideline cards and V3 footer source.
+// Divider names and the derived surface role below are site-level semantic assignments.
+$colors-light: (
+  paper: #ffffff,
+  night: #0d1117,
+  ink: #141a21,
+  ink-2: #3a424d,
+  ink-3: #6b7684,
+  mist: #e6edf3,
+  mist-2: #a9b2bd,
+  mist-3: #6e7681,
+  live-400: #3fb950,
+  live-500: #2f9e58,
+  live-600: #24713f,
+  signal-fail: #b8544c,
+  sky-100: #dbeafe,
+  line: #d8dee6,
+  line-dark: #30363d,
+);
+
+@mixin emit-light-colors {
+  @each $name, $value in $colors-light {
+    --color-#{$name}: #{$value};
+  }
+
+  --theme-color-canvas: var(--color-paper);
+  --theme-color-text: var(--color-ink);
+  --theme-color-text-muted: var(--color-ink-2);
+  --theme-color-text-subtle: var(--color-ink-3);
+  --theme-color-border: var(--color-line);
+  --theme-color-focus: var(--color-live-600);
+  --theme-color-action: var(--color-ink);
+  --theme-color-action-border: var(--color-ink);
+  --theme-color-action-hover: var(--color-live-600);
+  --theme-color-action-hover-border: var(--color-live-600);
+  --theme-color-danger-text: var(--color-signal-fail);
+
+  --color-canvas: var(--theme-color-canvas);
+  --color-canvas-inverse: var(--color-night);
+  // Derived site surface: the guideline contains no named surface token.
+  --color-surface: color-mix(in srgb, var(--color-paper) 94%, var(--color-line));
+  --color-full-bleed-preview: var(--color-sky-100);
+  --color-text: var(--theme-color-text);
+  --color-text-muted: var(--theme-color-text-muted);
+  --color-text-subtle: var(--theme-color-text-subtle);
+  --color-text-inverse: var(--color-mist);
+  --color-text-inverse-muted: var(--color-mist-2);
+  --color-accent: var(--color-live-500);
+  --color-accent-strong: var(--color-live-600);
+  --color-accent-on-dark: var(--color-live-400);
+  --color-danger: var(--color-signal-fail);
+  --color-border: var(--theme-color-border);
+  --color-border-inverse: var(--color-line-dark);
+  --color-focus: var(--theme-color-focus);
+  --color-danger-text: var(--theme-color-danger-text);
+
+  --color-action: var(--theme-color-action);
+  --color-action-border: var(--theme-color-action-border);
+  --color-action-hover: var(--theme-color-action-hover);
+  --color-action-hover-border: var(--theme-color-action-hover-border);
+  --color-action-primary: var(--color-live-600);
+  --color-action-primary-text: var(--color-paper);
+  --color-action-primary-hover: var(--color-ink);
+  --color-action-primary-hover-text: var(--color-paper);
+  --color-action-danger: var(--theme-color-action);
+  --color-action-danger-hover: var(--theme-color-action);
+}

@@ -1,0 +1,14 @@
+// Interaction timings are implementation values for this site foundation.
+$motion: (
+  fast: 160ms,
+  normal: 260ms,
+  slow: 420ms,
+);
+
+@mixin emit-motion {
+  @each $name, $value in $motion {
+    --duration-#{$name}: #{$value};
+  }
+
+  --ease-standard: cubic-bezier(0.2, 0.75, 0.25, 1);
+}

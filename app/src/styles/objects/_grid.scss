@@ -1,0 +1,15 @@
+@use '../settings';
+
+@layer objects {
+  .o-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--grid-columns, 2), minmax(0, 1fr));
+    gap: var(--grid-space, var(--sp-5));
+  }
+
+  @media (max-width: settings.$breakpoint-medium) {
+    .o-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}

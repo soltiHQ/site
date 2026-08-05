@@ -1,0 +1,11 @@
+@use '../tools';
+
+@layer elements {
+  a {
+    color: inherit;
+  }
+
+  a:focus-visible {
+    @include tools.focus-ring;
+  }
+}
