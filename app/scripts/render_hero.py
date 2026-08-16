@@ -20,6 +20,9 @@ HEIGHT = 900
 COMPOSITION_LIFT = HEIGHT * 3.5 / 100.0
 OUTPUT_WIDTH = 6144
 OUTPUT_HEIGHT = 3840
+AVIF_SIZE = (2880, 1800)
+WEBM_SIZE = AVIF_SIZE
+MP4_SIZE = (2560, 1600)
 SCALE = OUTPUT_WIDTH / WIDTH
 RW = OUTPUT_WIDTH
 RH = OUTPUT_HEIGHT
@@ -688,8 +691,10 @@ def encode_animation(
         "-filter_complex",
         (
             "[0:v]split=2[vp9src][h264src];"
-            "[vp9src]format=yuv420p[vp9];"
-            "[h264src]scale=3456:2160:"
+            f"[vp9src]scale={WEBM_SIZE[0]}:{WEBM_SIZE[1]}:"
+            "flags=lanczos+accurate_rnd+full_chroma_int,"
+            "format=yuv420p[vp9];"
+            f"[h264src]scale={MP4_SIZE[0]}:{MP4_SIZE[1]}:"
             "flags=lanczos+accurate_rnd+full_chroma_int,"
             "format=yuv420p[h264]"
         ),
@@ -703,7 +708,7 @@ def encode_animation(
         "-pix_fmt",
         "yuv420p",
         "-crf",
-        "16",
+        "20",
         "-b:v",
         "0",
         "-deadline",
@@ -717,10 +722,16 @@ def encode_animation(
         "-row-mt",
         "1",
         "-tile-columns",
-        "3",
+        "2",
+        "-tile-rows",
+        "1",
         "-frame-parallel",
         "1",
         "-lag-in-frames",
+        "25",
+        "-sharpness",
+        "0",
+        "-threads",
         "12",
         "-g",
         str(FRAME_COUNT),
@@ -739,7 +750,7 @@ def encode_animation(
         "-c:v",
         "libx264",
         "-crf",
-        "14",
+        "17",
         "-preset",
         "slow",
         "-tune",
@@ -756,6 +767,8 @@ def encode_animation(
         str(FRAME_COUNT),
         "-sc_threshold",
         "0",
+        "-x264-params",
+        "colorprim=bt709:transfer=bt709:colormatrix=bt709:range=limited",
         "-movflags",
         "+faststart",
         "-color_range",
@@ -780,13 +793,7 @@ def encode_animation(
     for frame_index in range(FRAME_COUNT):
         frame = renderer(frame_index / FRAME_COUNT, style)
         if frame_index == 0:
-            frame.save(
-                poster_path,
-                "AVIF",
-                quality=95,
-                speed=4,
-                subsampling="4:4:4",
-            )
+            save_poster(frame, poster_path)
         process.stdin.write(frame.tobytes())
         if frame_index % (FPS * 2) == 0:
             print(
@@ -803,6 +810,17 @@ def encode_animation(
     print(poster_path, flush=True)
     print(webm_path, flush=True)
     print(mp4_path, flush=True)
+
+
+def save_poster(frame: Image.Image, path: Path) -> None:
+    poster = frame.resize(AVIF_SIZE, Image.Resampling.LANCZOS)
+    poster.save(
+        path,
+        "AVIF",
+        quality=95,
+        speed=4,
+        subsampling="4:4:4",
+    )
 
 
 def main() -> None:
@@ -823,13 +841,7 @@ def main() -> None:
     for style in selected_styles:
         if arguments.poster_only:
             poster_path = output_dir / f"{style.stem}.avif"
-            render_hero(0.0, style).save(
-                poster_path,
-                "AVIF",
-                quality=95,
-                speed=4,
-                subsampling="4:4:4",
-            )
+            save_poster(render_hero(0.0, style), poster_path)
             print(poster_path, flush=True)
         else:
             encode_animation(output_dir, style, render_hero)

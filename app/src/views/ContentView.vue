@@ -74,16 +74,16 @@ onBeforeUnmount(() => {
           loop
           playsinline
           preload="metadata"
-          poster="/media/hero-conductor-static-shadow-000.avif?v=20260816m"
+          poster="/media/hero-conductor-static-shadow-000.avif?v=20260816n"
           tabindex="-1"
         >
           <source
-            data-src="/media/hero-conductor-static-shadow-000.webm?v=20260816m"
+            data-src="/media/hero-conductor-static-shadow-000.webm?v=20260816n"
             type="video/webm"
             media="(prefers-reduced-motion: no-preference)"
           />
           <source
-            data-src="/media/hero-conductor-static-shadow-000.mp4?v=20260816m"
+            data-src="/media/hero-conductor-static-shadow-000.mp4?v=20260816n"
             type="video/mp4"
             media="(prefers-reduced-motion: no-preference)"
           />
