@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the seamless Solti three-voice hero animation."""
+"""Render the seamless Solti three-voice hero animation and static cue."""
 
 from __future__ import annotations
 
@@ -21,8 +21,6 @@ COMPOSITION_LIFT = HEIGHT * 3.5 / 100.0
 OUTPUT_WIDTH = 6144
 OUTPUT_HEIGHT = 3840
 AVIF_SIZE = (2880, 1800)
-WEBM_SIZE = AVIF_SIZE
-MP4_SIZE = (2560, 1600)
 SCALE = OUTPUT_WIDTH / WIDTH
 RW = OUTPUT_WIDTH
 RH = OUTPUT_HEIGHT
@@ -67,6 +65,7 @@ FADE_MASK_CACHE: dict[tuple[int, int, float, float, float, float], Image.Image] 
 CUE_SOURCE_PATH = (
     Path(__file__).resolve().parent / "assets" / "conductor-filament-source.png"
 )
+CUE_OVERLAY_NAME = "hero-conductor-static.webp"
 # Keep the exact approved cue footprint from the previous pen-path version.
 CUE_TARGET_BOX = (603.65, 457.28, 853.36, 842.66)
 
@@ -106,6 +105,16 @@ class RenderStyle:
     color_saturation: float
 
 
+@dataclass(frozen=True)
+class VideoTier:
+    suffix: str
+    webm_size: tuple[int, int]
+    webm_crf: int
+    mp4_size: tuple[int, int]
+    mp4_crf: int
+    mp4_level: str
+
+
 RENDER_STYLES = (
     RenderStyle(
         stem="hero-conductor-static-shadow-000",
@@ -124,6 +133,12 @@ RENDER_STYLES = (
         thread_motion_strength=1.0,
         color_saturation=1.08,
     ),
+)
+
+VIDEO_TIERS = (
+    VideoTier("", (2880, 1800), 20, (2560, 1600), 17, "5.1"),
+    VideoTier("-standard", (1920, 1200), 22, (1920, 1200), 19, "5.0"),
+    VideoTier("-mobile", (1440, 900), 24, (1440, 900), 21, "4.0"),
 )
 
 LAYER_FLOW = (
@@ -626,40 +641,30 @@ def load_raster_cue() -> RasterCue:
     return raster_cue
 
 
-def draw_raster_cue_underlay(
-    canvas: Image.Image,
-) -> None:
+def build_cue_overlay() -> Image.Image:
+    """Return the approved static cue as a tightly cropped RGBA overlay."""
     raster_cue = load_raster_cue()
-    position = raster_cue.position
-    canvas.alpha_composite(raster_cue.glow, position)
-    canvas.alpha_composite(raster_cue.underlay, position)
+    overlay = rgba_layer(*raster_cue.image.size)
+    overlay.alpha_composite(raster_cue.glow)
+    overlay.alpha_composite(raster_cue.underlay)
+    overlay.alpha_composite(raster_cue.image)
+    return overlay
 
 
-def draw_raster_cue(
-    canvas: Image.Image,
-) -> None:
-    raster_cue = load_raster_cue()
-    canvas.alpha_composite(
-        raster_cue.image,
-        raster_cue.position,
-    )
-
-
-def render_hero(
+def render_waves(
     progress: float = 0.0,
     style: RenderStyle = RENDER_STYLES[0],
 ) -> Image.Image:
+    """Render the opaque background and waves without the static cue."""
     canvas = build_background()
     geometries = tuple(
         build_layer_geometry(index, progress, style)
         for index in range(3)
     )
-    draw_raster_cue_underlay(canvas)
     for index, geometry in enumerate(geometries):
         draw_layer_mass(canvas, geometry, index, style)
     for index, geometry in enumerate(geometries):
         draw_layer_texture(canvas, geometry, index, style, progress)
-    draw_raster_cue(canvas)
 
     return canvas.convert("RGB")
 
@@ -670,8 +675,29 @@ def encode_animation(
     renderer: Callable[[float, RenderStyle], Image.Image],
 ) -> None:
     poster_path = output_dir / f"{style.stem}.avif"
-    webm_path = output_dir / f"{style.stem}.webm"
-    mp4_path = output_dir / f"{style.stem}.mp4"
+    split_labels: list[str] = []
+    scale_filters: list[str] = []
+    for index, tier in enumerate(VIDEO_TIERS):
+        split_labels.extend((f"[vp9src{index}]", f"[h264src{index}]"))
+        scale_filters.extend(
+            (
+                (
+                    f"[vp9src{index}]scale={tier.webm_size[0]}:{tier.webm_size[1]}:"
+                    "flags=lanczos+accurate_rnd+full_chroma_int,"
+                    f"format=yuv420p[vp9{index}]"
+                ),
+                (
+                    f"[h264src{index}]scale={tier.mp4_size[0]}:{tier.mp4_size[1]}:"
+                    "flags=lanczos+accurate_rnd+full_chroma_int,"
+                    f"format=yuv420p[h264{index}]"
+                ),
+            )
+        )
+
+    filter_graph = (
+        f"[0:v]split={len(split_labels)}{''.join(split_labels)};"
+        + ";".join(scale_filters)
+    )
     command = (
         "/opt/homebrew/bin/ffmpeg",
         "-hide_banner",
@@ -689,98 +715,97 @@ def encode_animation(
         "-i",
         "pipe:0",
         "-filter_complex",
-        (
-            "[0:v]split=2[vp9src][h264src];"
-            f"[vp9src]scale={WEBM_SIZE[0]}:{WEBM_SIZE[1]}:"
-            "flags=lanczos+accurate_rnd+full_chroma_int,"
-            "format=yuv420p[vp9];"
-            f"[h264src]scale={MP4_SIZE[0]}:{MP4_SIZE[1]}:"
-            "flags=lanczos+accurate_rnd+full_chroma_int,"
-            "format=yuv420p[h264]"
-        ),
-        "-map",
-        "[vp9]",
-        "-an",
-        "-c:v",
-        "libvpx-vp9",
-        "-profile:v",
-        "0",
-        "-pix_fmt",
-        "yuv420p",
-        "-crf",
-        "20",
-        "-b:v",
-        "0",
-        "-deadline",
-        "good",
-        "-cpu-used",
-        "2",
-        "-tune-content",
-        "screen",
-        "-aq-mode",
-        "1",
-        "-row-mt",
-        "1",
-        "-tile-columns",
-        "2",
-        "-tile-rows",
-        "1",
-        "-frame-parallel",
-        "1",
-        "-lag-in-frames",
-        "25",
-        "-sharpness",
-        "0",
-        "-threads",
-        "12",
-        "-g",
-        str(FRAME_COUNT),
-        "-color_range",
-        "tv",
-        "-colorspace",
-        "bt709",
-        "-color_trc",
-        "bt709",
-        "-color_primaries",
-        "bt709",
-        str(webm_path),
-        "-map",
-        "[h264]",
-        "-an",
-        "-c:v",
-        "libx264",
-        "-crf",
-        "17",
-        "-preset",
-        "slow",
-        "-tune",
-        "animation",
-        "-profile:v",
-        "high",
-        "-level",
-        "5.1",
-        "-pix_fmt",
-        "yuv420p",
-        "-g",
-        str(FRAME_COUNT),
-        "-keyint_min",
-        str(FRAME_COUNT),
-        "-sc_threshold",
-        "0",
-        "-x264-params",
-        "colorprim=bt709:transfer=bt709:colormatrix=bt709:range=limited",
-        "-movflags",
-        "+faststart",
-        "-color_range",
-        "tv",
-        "-colorspace",
-        "bt709",
-        "-color_trc",
-        "bt709",
-        "-color_primaries",
-        "bt709",
-        str(mp4_path),
+        filter_graph,
     )
+    output_paths: list[Path] = []
+    for index, tier in enumerate(VIDEO_TIERS):
+        webm_path = output_dir / f"{style.stem}{tier.suffix}.webm"
+        mp4_path = output_dir / f"{style.stem}{tier.suffix}.mp4"
+        output_paths.extend((webm_path, mp4_path))
+        command += (
+            "-map",
+            f"[vp9{index}]",
+            "-an",
+            "-c:v",
+            "libvpx-vp9",
+            "-profile:v",
+            "0",
+            "-pix_fmt",
+            "yuv420p",
+            "-crf",
+            str(tier.webm_crf),
+            "-b:v",
+            "0",
+            "-deadline",
+            "good",
+            "-cpu-used",
+            "2",
+            "-tune-content",
+            "screen",
+            "-aq-mode",
+            "1",
+            "-row-mt",
+            "1",
+            "-tile-columns",
+            "2",
+            "-tile-rows",
+            "1",
+            "-frame-parallel",
+            "1",
+            "-lag-in-frames",
+            "25",
+            "-sharpness",
+            "0",
+            "-threads",
+            "12",
+            "-g",
+            str(FRAME_COUNT),
+            "-color_range",
+            "tv",
+            "-colorspace",
+            "bt709",
+            "-color_trc",
+            "bt709",
+            "-color_primaries",
+            "bt709",
+            str(webm_path),
+            "-map",
+            f"[h264{index}]",
+            "-an",
+            "-c:v",
+            "libx264",
+            "-crf",
+            str(tier.mp4_crf),
+            "-preset",
+            "slow",
+            "-tune",
+            "animation",
+            "-profile:v",
+            "high",
+            "-level",
+            tier.mp4_level,
+            "-pix_fmt",
+            "yuv420p",
+            "-g",
+            str(FRAME_COUNT),
+            "-keyint_min",
+            str(FRAME_COUNT),
+            "-sc_threshold",
+            "0",
+            "-x264-params",
+            "colorprim=bt709:transfer=bt709:colormatrix=bt709:range=limited",
+            "-movflags",
+            "+faststart",
+            "-color_range",
+            "tv",
+            "-colorspace",
+            "bt709",
+            "-color_trc",
+            "bt709",
+            "-color_primaries",
+            "bt709",
+            str(mp4_path),
+        )
     process = subprocess.Popen(
         command,
         stdin=subprocess.PIPE,
@@ -808,8 +833,8 @@ def encode_animation(
         raise RuntimeError(error_output.decode("utf-8", errors="replace"))
 
     print(poster_path, flush=True)
-    print(webm_path, flush=True)
-    print(mp4_path, flush=True)
+    for output_path in output_paths:
+        print(output_path, flush=True)
 
 
 def save_poster(frame: Image.Image, path: Path) -> None:
@@ -823,6 +848,16 @@ def save_poster(frame: Image.Image, path: Path) -> None:
     )
 
 
+def save_cue_overlay(path: Path) -> None:
+    build_cue_overlay().save(
+        path,
+        "WEBP",
+        lossless=True,
+        method=6,
+        exact=True,
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -830,21 +865,29 @@ def main() -> None:
         choices=tuple(style.stem for style in RENDER_STYLES),
     )
     parser.add_argument("--poster-only", action="store_true")
+    parser.add_argument("--output-dir", type=Path)
     arguments = parser.parse_args()
-    output_dir = Path(__file__).resolve().parents[1] / "public" / "media"
+    output_dir = (
+        arguments.output_dir
+        if arguments.output_dir is not None
+        else Path(__file__).resolve().parents[1] / "public" / "media"
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     selected_styles = (
         tuple(style for style in RENDER_STYLES if style.stem == arguments.style)
         if arguments.style
         else RENDER_STYLES
     )
+    cue_path = output_dir / CUE_OVERLAY_NAME
+    save_cue_overlay(cue_path)
+    print(cue_path, flush=True)
     for style in selected_styles:
         if arguments.poster_only:
             poster_path = output_dir / f"{style.stem}.avif"
-            save_poster(render_hero(0.0, style), poster_path)
+            save_poster(render_waves(0.0, style), poster_path)
             print(poster_path, flush=True)
         else:
-            encode_animation(output_dir, style, render_hero)
+            encode_animation(output_dir, style, render_waves)
 
 
 if __name__ == "__main__":

@@ -2,8 +2,8 @@
 
 The repository is split into two project surfaces:
 
-- `app/` — the Vue 3, TypeScript, Vue Router, and SCSS application.
-- `tf/` — infrastructure configuration; intentionally unchanged at this stage.
+- `app/` - the Vue 3, TypeScript, Vue Router, and SCSS application.
+- `tf/` - infrastructure configuration; intentionally unchanged at this stage.
 
 ## Application
 

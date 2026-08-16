@@ -74,34 +74,60 @@ onBeforeUnmount(() => {
           loop
           playsinline
           preload="metadata"
-          poster="/media/hero-conductor-static-shadow-000.avif?v=20260816n"
+          poster="/media/hero-conductor-static-shadow-000.avif?v=20260816q"
           tabindex="-1"
         >
           <source
-            data-src="/media/hero-conductor-static-shadow-000.webm?v=20260816n"
+            data-src="/media/hero-conductor-static-shadow-000.webm?v=20260816q"
+            type="video/webm"
+            media="(prefers-reduced-motion: no-preference) and (min-width: 1920px)"
+          />
+          <source
+            data-src="/media/hero-conductor-static-shadow-000.mp4?v=20260816q"
+            type="video/mp4"
+            media="(prefers-reduced-motion: no-preference) and (min-width: 1920px)"
+          />
+          <source
+            data-src="/media/hero-conductor-static-shadow-000-standard.webm?v=20260816q"
+            type="video/webm"
+            media="(prefers-reduced-motion: no-preference) and (min-width: 768px)"
+          />
+          <source
+            data-src="/media/hero-conductor-static-shadow-000-standard.mp4?v=20260816q"
+            type="video/mp4"
+            media="(prefers-reduced-motion: no-preference) and (min-width: 768px)"
+          />
+          <source
+            data-src="/media/hero-conductor-static-shadow-000-mobile.webm?v=20260816q"
             type="video/webm"
             media="(prefers-reduced-motion: no-preference)"
           />
           <source
-            data-src="/media/hero-conductor-static-shadow-000.mp4?v=20260816n"
+            data-src="/media/hero-conductor-static-shadow-000-mobile.mp4?v=20260816q"
             type="video/mp4"
             media="(prefers-reduced-motion: no-preference)"
           />
         </video>
-      </div>
-      <div
-        class="content-view__visual-labels content-view__visual-labels--rest"
-        aria-hidden="true"
-      >
-        <span class="content-view__visual-label content-view__visual-label--podium">
-          <span class="content-view__visual-label-name">Podium</span>
-        </span>
-        <span class="content-view__visual-label content-view__visual-label--sdk">
-          <span class="content-view__visual-label-name">SDK</span>
-        </span>
-        <span class="content-view__visual-label content-view__visual-label--taskvisor">
-          <span class="content-view__visual-label-name">Taskvisor</span>
-        </span>
+        <img
+          class="content-view__hero-conductor"
+          src="/media/hero-conductor-static.webp?v=20260816q"
+          alt=""
+          width="1065"
+          height="1644"
+          decoding="async"
+          fetchpriority="high"
+        />
+        <div class="content-view__visual-labels content-view__visual-labels--rest">
+          <span class="content-view__visual-label content-view__visual-label--podium">
+            <span class="content-view__visual-label-name">Podium</span>
+          </span>
+          <span class="content-view__visual-label content-view__visual-label--sdk">
+            <span class="content-view__visual-label-name">SDK</span>
+          </span>
+          <span class="content-view__visual-label content-view__visual-label--taskvisor">
+            <span class="content-view__visual-label-name">Taskvisor</span>
+          </span>
+        </div>
       </div>
 
       <BaseContainer class="content-view__hero-content">

@@ -46,12 +46,6 @@
     text-decoration: none;
   }
 
-  .site-header__brand-logo {
-    display: none;
-    width: var(--control-brand-logo-size);
-    height: var(--control-brand-logo-size);
-  }
-
   .site-header__brand-word-logo {
     display: block;
     width: auto;
@@ -116,12 +110,5 @@
       gap: var(--sp-3);
     }
 
-    .site-header__brand-word-logo {
-      display: none;
-    }
-
-    .site-header__brand-logo {
-      display: block;
-    }
   }
 }

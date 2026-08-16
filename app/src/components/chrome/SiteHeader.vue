@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import soltiLogoDarkUrl from '@/assets/logo/solti-logo-dark.svg'
 import soltiWordDarkUrl from '@/assets/word/solti-word-dark.svg'
 import { useHeaderScrollState } from '@/composables/useHeaderScrollState'
 
@@ -19,13 +18,6 @@ const { isScrolled } = useHeaderScrollState()
             alt=""
             width="202"
             height="108"
-          />
-          <img
-            class="site-header__brand-logo"
-            :src="soltiLogoDarkUrl"
-            alt=""
-            width="460"
-            height="460"
           />
         </RouterLink>
 
