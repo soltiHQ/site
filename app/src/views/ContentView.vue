@@ -1,27 +1,126 @@
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+
 import BaseContainer from '@/components/layout/BaseContainer.vue'
 import BaseFullBleed from '@/components/layout/BaseFullBleed.vue'
 import BaseStack from '@/components/layout/BaseStack.vue'
+import BaseActionLink from '@/components/ui/BaseActionLink.vue'
 import BaseHeading from '@/components/ui/BaseHeading.vue'
 import BaseLabel from '@/components/ui/BaseLabel.vue'
 import BaseText from '@/components/ui/BaseText.vue'
 import BaseView from '@/components/view/BaseView.vue'
+
+const heroVideo = ref<HTMLVideoElement | null>(null)
+
+let videoObserver: IntersectionObserver | undefined
+let heroIsVisible = false
+
+function hydrateVideo(video: HTMLVideoElement) {
+  let changed = false
+  video.querySelectorAll<HTMLSourceElement>('source[data-src]').forEach((source) => {
+    if (!source.dataset.src) return
+    source.src = source.dataset.src
+    source.removeAttribute('data-src')
+    changed = true
+  })
+  if (changed) video.load()
+}
+
+function updateHeroVideo() {
+  const video = heroVideo.value
+  if (!video) return
+
+  if (document.hidden || !heroIsVisible) {
+    video.pause()
+    return
+  }
+
+  hydrateVideo(video)
+  void video.play().catch(() => undefined)
+}
+
+onMounted(() => {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+  const video = heroVideo.value
+  if (!video) return
+
+  videoObserver = new IntersectionObserver(
+    ([entry]) => {
+      heroIsVisible = (entry?.intersectionRatio ?? 0) >= 0.2
+      updateHeroVideo()
+    },
+    { threshold: [0, 0.2] },
+  )
+
+  videoObserver.observe(video)
+  document.addEventListener('visibilitychange', updateHeroVideo)
+})
+
+onBeforeUnmount(() => {
+  videoObserver?.disconnect()
+  document.removeEventListener('visibilitychange', updateHeroVideo)
+})
 </script>
 
 <template>
   <BaseView class="content-view">
-    <section class="o-section content-view__hero" aria-labelledby="preview-title">
-      <BaseContainer class="content-view__hero-inner">
-        <BaseStack :space="6">
-          <BaseLabel>ContentView / transparency preview</BaseLabel>
-          <BaseHeading id="preview-title" as="h1" size="display">
-            Structure before content.
+    <section class="content-view__hero" aria-labelledby="hero-title">
+      <div class="content-view__hero-visual" aria-hidden="true">
+        <video
+          ref="heroVideo"
+          class="content-view__hero-video"
+          muted
+          loop
+          playsinline
+          preload="metadata"
+          poster="/media/hero-conductor-static-shadow-000.avif?v=20260816m"
+          tabindex="-1"
+        >
+          <source
+            data-src="/media/hero-conductor-static-shadow-000.webm?v=20260816m"
+            type="video/webm"
+            media="(prefers-reduced-motion: no-preference)"
+          />
+          <source
+            data-src="/media/hero-conductor-static-shadow-000.mp4?v=20260816m"
+            type="video/mp4"
+            media="(prefers-reduced-motion: no-preference)"
+          />
+        </video>
+      </div>
+      <div
+        class="content-view__visual-labels content-view__visual-labels--rest"
+        aria-hidden="true"
+      >
+        <span class="content-view__visual-label content-view__visual-label--podium">
+          <span class="content-view__visual-label-name">Podium</span>
+        </span>
+        <span class="content-view__visual-label content-view__visual-label--sdk">
+          <span class="content-view__visual-label-name">SDK</span>
+        </span>
+        <span class="content-view__visual-label content-view__visual-label--taskvisor">
+          <span class="content-view__visual-label-name">Taskvisor</span>
+        </span>
+      </div>
+
+      <BaseContainer class="content-view__hero-content">
+        <div class="content-view__hero-copy">
+          <BaseHeading
+            id="hero-title"
+            as="h1"
+            size="display"
+            class="content-view__hero-title"
+          >
+            Compose systems.
           </BaseHeading>
-          <BaseText tone="muted">
-            This temporary copy exists only to make the header surface, blur, transparency, and
-            scroll behavior visible while the real site content is still being designed.
+          <BaseText class="content-view__hero-lede" tone="muted">
+            Taskvisor, Solti SDK, and Podium—alone or in concert.
           </BaseText>
-        </BaseStack>
+          <BaseActionLink href="https://github.com/soltiHQ" external variant="primary">
+            Explore Solti ↗
+          </BaseActionLink>
+        </div>
       </BaseContainer>
     </section>
 
