@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
+import { siteContent } from '@/contents'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   scrollBehavior(to, _from, savedPosition) {
@@ -12,7 +14,7 @@ const router = createRouter({
       path: '/',
       name: 'content',
       component: () => import('@/views/ContentView.vue'),
-      meta: { title: 'Solti — site foundation' },
+      meta: { title: siteContent.meta.title },
     },
     {
       path: '/:pathMatch(.*)*',
@@ -22,7 +24,7 @@ const router = createRouter({
 })
 
 router.afterEach((to) => {
-  document.title = typeof to.meta.title === 'string' ? to.meta.title : 'Solti'
+  document.title = typeof to.meta.title === 'string' ? to.meta.title : siteContent.brand.name
 })
 
 export default router

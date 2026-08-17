@@ -1,5 +1,5 @@
 // Header/footer geometry is carried from the selected templates.
-// Container, gutters, and the temporary empty-view height are site implementation values.
+// Container and gutters are site implementation values.
 $layout: (
   container: 80rem,
   gutter: 4rem,
@@ -11,7 +11,6 @@ $layout: (
   header-gutter-compact: 0.5rem,
   header-height: 4.25rem,
   footer-height: 6rem,
-  preview-full-bleed-height: 18rem,
 );
 
 @mixin emit-layout {

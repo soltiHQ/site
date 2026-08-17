@@ -17,7 +17,6 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 WIDTH = 1440
 HEIGHT = 900
-COMPOSITION_LIFT = HEIGHT * 3.5 / 100.0
 OUTPUT_WIDTH = 6144
 OUTPUT_HEIGHT = 3840
 AVIF_SIZE = (2880, 1800)
@@ -80,7 +79,6 @@ class RasterCue:
     image: Image.Image
     underlay: Image.Image
     glow: Image.Image
-    position: tuple[int, int]
 
 
 RASTER_CUE_CACHE: RasterCue | None = None
@@ -128,7 +126,7 @@ RENDER_STYLES = (
         fade_end=1440.0,
         fade_minimum=0.34,
         volume_strength=1.05,
-        vertical_offset=-COMPOSITION_LIFT,
+        vertical_offset=0.0,
         flow_width_scale=1.0,
         thread_motion_strength=1.0,
         color_saturation=1.08,
@@ -634,8 +632,6 @@ def load_raster_cue() -> RasterCue:
         image=image,
         underlay=image_with_opacity(image, 0.27),
         glow=image_with_opacity(glow, 0.11),
-        # Freeze the cue at its previously approved frame-zero position.
-        position=(round(sc(x0)), round(sc(y0 - COMPOSITION_LIFT)) + 2),
     )
     RASTER_CUE_CACHE = raster_cue
     return raster_cue

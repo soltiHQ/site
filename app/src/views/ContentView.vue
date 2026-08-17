@@ -2,18 +2,29 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import BaseContainer from '@/components/layout/BaseContainer.vue'
-import BaseFullBleed from '@/components/layout/BaseFullBleed.vue'
-import BaseStack from '@/components/layout/BaseStack.vue'
 import BaseActionLink from '@/components/ui/BaseActionLink.vue'
 import BaseHeading from '@/components/ui/BaseHeading.vue'
-import BaseLabel from '@/components/ui/BaseLabel.vue'
 import BaseText from '@/components/ui/BaseText.vue'
 import BaseView from '@/components/view/BaseView.vue'
+import { siteContent } from '@/contents'
 
 const heroVideo = ref<HTMLVideoElement | null>(null)
+const pageContent = siteContent.pages.content
+const heroMedia = siteContent.media.hero
+
+function heroMediaUrl(path: string) {
+  return `${path}?v=${heroMedia.version}`
+}
 
 let videoObserver: IntersectionObserver | undefined
 let heroIsVisible = false
+let loadedVideoTier: 'mobile' | 'standard' | 'large' | undefined
+
+function getHeroVideoTier() {
+  if (window.innerWidth >= 1920) return 'large'
+  if (window.innerWidth >= 768) return 'standard'
+  return 'mobile'
+}
 
 function hydrateVideo(video: HTMLVideoElement) {
   let changed = false
@@ -23,7 +34,12 @@ function hydrateVideo(video: HTMLVideoElement) {
     source.removeAttribute('data-src')
     changed = true
   })
-  if (changed) video.load()
+
+  const videoTier = getHeroVideoTier()
+  if (changed || loadedVideoTier !== videoTier) {
+    loadedVideoTier = videoTier
+    video.load()
+  }
 }
 
 function updateHeroVideo() {
@@ -37,6 +53,11 @@ function updateHeroVideo() {
 
   hydrateVideo(video)
   void video.play().catch(() => undefined)
+}
+
+function handleViewportResize() {
+  if (loadedVideoTier === getHeroVideoTier()) return
+  updateHeroVideo()
 }
 
 onMounted(() => {
@@ -55,11 +76,13 @@ onMounted(() => {
 
   videoObserver.observe(video)
   document.addEventListener('visibilitychange', updateHeroVideo)
+  window.addEventListener('resize', handleViewportResize)
 })
 
 onBeforeUnmount(() => {
   videoObserver?.disconnect()
   document.removeEventListener('visibilitychange', updateHeroVideo)
+  window.removeEventListener('resize', handleViewportResize)
 })
 </script>
 
@@ -74,43 +97,43 @@ onBeforeUnmount(() => {
           loop
           playsinline
           preload="metadata"
-          poster="/media/hero-conductor-static-shadow-000.avif?v=20260816q"
+          :poster="heroMediaUrl(heroMedia.poster)"
           tabindex="-1"
         >
           <source
-            data-src="/media/hero-conductor-static-shadow-000.webm?v=20260816q"
-            type="video/webm"
-            media="(prefers-reduced-motion: no-preference) and (min-width: 1920px)"
-          />
-          <source
-            data-src="/media/hero-conductor-static-shadow-000.mp4?v=20260816q"
+            :data-src="heroMediaUrl(heroMedia.video.large.mp4)"
             type="video/mp4"
             media="(prefers-reduced-motion: no-preference) and (min-width: 1920px)"
           />
           <source
-            data-src="/media/hero-conductor-static-shadow-000-standard.webm?v=20260816q"
+            :data-src="heroMediaUrl(heroMedia.video.large.webm)"
             type="video/webm"
-            media="(prefers-reduced-motion: no-preference) and (min-width: 768px)"
+            media="(prefers-reduced-motion: no-preference) and (min-width: 1920px)"
           />
           <source
-            data-src="/media/hero-conductor-static-shadow-000-standard.mp4?v=20260816q"
+            :data-src="heroMediaUrl(heroMedia.video.standard.mp4)"
             type="video/mp4"
             media="(prefers-reduced-motion: no-preference) and (min-width: 768px)"
           />
           <source
-            data-src="/media/hero-conductor-static-shadow-000-mobile.webm?v=20260816q"
+            :data-src="heroMediaUrl(heroMedia.video.standard.webm)"
             type="video/webm"
+            media="(prefers-reduced-motion: no-preference) and (min-width: 768px)"
+          />
+          <source
+            :data-src="heroMediaUrl(heroMedia.video.mobile.mp4)"
+            type="video/mp4"
             media="(prefers-reduced-motion: no-preference)"
           />
           <source
-            data-src="/media/hero-conductor-static-shadow-000-mobile.mp4?v=20260816q"
-            type="video/mp4"
+            :data-src="heroMediaUrl(heroMedia.video.mobile.webm)"
+            type="video/webm"
             media="(prefers-reduced-motion: no-preference)"
           />
         </video>
         <img
           class="content-view__hero-conductor"
-          src="/media/hero-conductor-static.webp?v=20260816q"
+          :src="heroMediaUrl(heroMedia.conductor)"
           alt=""
           width="1065"
           height="1644"
@@ -119,13 +142,13 @@ onBeforeUnmount(() => {
         />
         <div class="content-view__visual-labels content-view__visual-labels--rest">
           <span class="content-view__visual-label content-view__visual-label--podium">
-            <span class="content-view__visual-label-name">Podium</span>
+            <span class="content-view__visual-label-name">{{ pageContent.hero.labels.podium }}</span>
           </span>
           <span class="content-view__visual-label content-view__visual-label--sdk">
-            <span class="content-view__visual-label-name">SDK</span>
+            <span class="content-view__visual-label-name">{{ pageContent.hero.labels.sdk }}</span>
           </span>
           <span class="content-view__visual-label content-view__visual-label--taskvisor">
-            <span class="content-view__visual-label-name">Taskvisor</span>
+            <span class="content-view__visual-label-name">{{ pageContent.hero.labels.taskvisor }}</span>
           </span>
         </div>
       </div>
@@ -138,49 +161,15 @@ onBeforeUnmount(() => {
             size="display"
             class="content-view__hero-title"
           >
-            Compose systems.
+            {{ pageContent.hero.title }}
           </BaseHeading>
           <BaseText class="content-view__hero-lede" tone="muted">
-            Taskvisor, Solti SDK, and Podium—alone or in concert.
+            {{ pageContent.hero.lede }}
           </BaseText>
-          <BaseActionLink href="https://github.com/soltiHQ" external variant="primary">
-            Explore Solti ↗
+          <BaseActionLink :href="siteContent.links.github" external variant="primary">
+            {{ siteContent.actions.explore }}
           </BaseActionLink>
         </div>
-      </BaseContainer>
-    </section>
-
-    <BaseContainer>
-      <BaseFullBleed
-        as="section"
-        class="content-view__full-bleed-preview"
-        aria-labelledby="full-bleed-preview-title"
-      >
-        <BaseStack :space="4" class="content-view__full-bleed-preview-copy">
-          <BaseLabel>BaseFullBleed / viewport width</BaseLabel>
-          <BaseHeading id="full-bleed-preview-title" as="h2" size="h1">
-            Edge-to-edge content.
-          </BaseHeading>
-        </BaseStack>
-      </BaseFullBleed>
-    </BaseContainer>
-
-    <section class="o-section content-view__copy" aria-labelledby="scroll-preview-title">
-      <BaseContainer class="content-view__columns">
-        <BaseLabel>Scroll / behavior preview</BaseLabel>
-        <BaseStack :space="5">
-          <BaseHeading id="scroll-preview-title" as="h2" size="h1">
-            Content moves behind the glass.
-          </BaseHeading>
-          <BaseText tone="muted">
-            The header remains fixed to the viewport. Text passing underneath it provides a clear
-            reference for the current opacity and backdrop blur.
-          </BaseText>
-          <BaseText tone="muted">
-            These paragraphs are placeholders, not final product messaging. They can be replaced
-            by composed sections without changing the shared View, layout, or style layers.
-          </BaseText>
-        </BaseStack>
       </BaseContainer>
     </section>
   </BaseView>

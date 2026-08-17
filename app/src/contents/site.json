@@ -1,0 +1,62 @@
+{
+  "meta": {
+    "title": "Solti — Modular task-execution stack",
+    "description": "Supervise work in Tokio services, build agents for subprocess or container workloads, and add central control with Taskvisor, Solti SDK, and Podium."
+  },
+  "brand": {
+    "name": "Solti",
+    "wordmark": "solti"
+  },
+  "links": {
+    "github": "https://github.com/soltiHQ",
+    "mainContent": "#main-content"
+  },
+  "accessibility": {
+    "skipToContent": "Skip to content",
+    "home": "Solti home",
+    "primaryNavigation": "Primary navigation",
+    "footerNavigation": "Footer navigation"
+  },
+  "actions": {
+    "source": "Source ↗",
+    "top": "Top ↑",
+    "explore": "Explore Solti ↗"
+  },
+  "media": {
+    "hero": {
+      "version": "20260817a",
+      "poster": "/media/hero-conductor-static-shadow-000.avif",
+      "conductor": "/media/hero-conductor-static.webp",
+      "video": {
+        "large": {
+          "webm": "/media/hero-conductor-static-shadow-000.webm",
+          "mp4": "/media/hero-conductor-static-shadow-000.mp4"
+        },
+        "standard": {
+          "webm": "/media/hero-conductor-static-shadow-000-standard.webm",
+          "mp4": "/media/hero-conductor-static-shadow-000-standard.mp4"
+        },
+        "mobile": {
+          "webm": "/media/hero-conductor-static-shadow-000-mobile.webm",
+          "mp4": "/media/hero-conductor-static-shadow-000-mobile.mp4"
+        }
+      }
+    }
+  },
+  "pages": {
+    "content": {
+      "hero": {
+        "title": "Compose systems.",
+        "lede": "From in-process supervision to agents and central control.",
+        "labels": {
+          "podium": "Podium",
+          "sdk": "SDK",
+          "taskvisor": "Taskvisor"
+        }
+      }
+    }
+  },
+  "footer": {
+    "descriptor": "modular task-execution stack"
+  }
+}

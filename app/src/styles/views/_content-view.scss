@@ -3,16 +3,17 @@
 @layer views {
   .content-view {
     position: relative;
+    min-height: 0;
     overflow-x: clip;
     padding-top: 0;
   }
 
   .content-view__hero {
-    --hero-composition-lift: max(
+    --hero-copy-lift: max(
       1.54rem,
       min(3.5vh, 2.625rem, calc(0.4846rem + 1.649vw))
     );
-    --hero-composition-lift: max(
+    --hero-copy-lift: max(
       1.54rem,
       min(3.5svh, 2.625rem, calc(0.4846rem + 1.649vw))
     );
@@ -29,10 +30,6 @@
     background: var(--color-canvas);
   }
 
-  .content-view__visual-labels {
-    transform: translateY(calc(0px - var(--hero-composition-lift)));
-  }
-
   .content-view__hero-content {
     position: relative;
     z-index: 2;
@@ -40,7 +37,7 @@
     place-items: center;
     padding-bottom: clamp(15rem, 30vh, 20rem);
     transform: translateY(
-      calc(0px - var(--hero-composition-lift) - var(--hero-copy-extra-lift))
+      calc(0px - var(--hero-copy-lift) - var(--hero-copy-extra-lift))
     );
   }
 
@@ -100,7 +97,7 @@
   .content-view__hero-conductor {
     position: absolute;
     z-index: 1;
-    top: 47.3698%;
+    top: 50.8594%;
     left: 50%;
     display: block;
     width: auto;
@@ -189,36 +186,9 @@
     filter: blur(0.12rem);
   }
 
-  .content-view__full-bleed-preview {
-    display: grid;
-    min-height: var(--layout-preview-full-bleed-height);
-    place-items: center;
-    padding: var(--sp-8);
-    background: var(--color-full-bleed-preview);
-  }
-
-  .content-view__full-bleed-preview-copy {
-    justify-items: center;
-    text-align: center;
-  }
-
-  .content-view__columns {
-    display: grid;
-    grid-template-columns: 0.55fr 1.45fr;
-    gap: var(--sp-8);
-  }
-
   @media (max-width: settings.$breakpoint-wide) {
     .content-view__hero {
       padding-top: calc(var(--layout-header-height) + var(--sp-7));
-    }
-
-  }
-
-  @media (max-width: settings.$breakpoint-medium) {
-    .content-view__columns {
-      grid-template-columns: 1fr;
-      gap: var(--sp-5);
     }
   }
 
@@ -228,5 +198,4 @@
       font-size: var(--font-size-body);
     }
   }
-
 }

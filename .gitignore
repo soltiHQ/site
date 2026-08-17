@@ -27,6 +27,7 @@ logs/
 
 # Site
 
+/.cache/
 /app/node_modules/
 /app/dist/
 /app/coverage/

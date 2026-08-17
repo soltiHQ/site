@@ -39,7 +39,6 @@ $colors-light: (
   --color-canvas-inverse: var(--color-night);
   // Derived site surface: the guideline contains no named surface token.
   --color-surface: color-mix(in srgb, var(--color-paper) 94%, var(--color-line));
-  --color-full-bleed-preview: var(--color-sky-100);
   --color-text: var(--theme-color-text);
   --color-text-muted: var(--theme-color-text-muted);
   --color-text-subtle: var(--theme-color-text-subtle);
