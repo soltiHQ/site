@@ -21,7 +21,6 @@ logs/
 *.pid.lock
 
 # Local environment files
-.env
 .env.*
 !.env.example
 
