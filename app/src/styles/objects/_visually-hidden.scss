@@ -1,0 +1,7 @@
+@use '../tools';
+
+@layer objects {
+  .u-visually-hidden {
+    @include tools.visually-hidden;
+  }
+}

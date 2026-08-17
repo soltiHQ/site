@@ -1,0 +1,5 @@
+@layer objects {
+  .o-section {
+    padding-block: clamp(var(--sp-7), 7vw, calc(var(--sp-8) * 1.5));
+  }
+}

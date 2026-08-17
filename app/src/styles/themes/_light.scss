@@ -1,0 +1,18 @@
+@use '../settings' as settings;
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+  @include settings.emit-light-colors;
+  @include settings.emit-spacing;
+  @include settings.emit-typography;
+  @include settings.emit-radii;
+  @include settings.emit-strokes;
+  @include settings.emit-shadows;
+  @include settings.emit-controls;
+  @include settings.emit-measures;
+  @include settings.emit-layout;
+  @include settings.emit-motion;
+  @include settings.emit-effects;
+  @include settings.emit-layers;
+}

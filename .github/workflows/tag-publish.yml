@@ -1,0 +1,29 @@
+name: Tag publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: site-production
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: write
+  id-token: write
+
+jobs:
+  release:
+    name: release
+    uses: soltiHQ/actions/.github/workflows/static-release.yml@v1
+    with:
+      aws-region: ${{ vars.AWS_REGION }}
+      terraform-state-bucket: ${{ vars.TF_STATE_BUCKET }}
+      terraform-state-key: ${{ vars.TF_STATE_KEY }}
+      terraform-state-region: ${{ vars.TF_STATE_REGION }}
+      terraform-role-arn: ${{ vars.AWS_TERRAFORM_DEPLOY_ROLE_ARN }}
+      domain-name: ${{ vars.SITE_DOMAIN_NAME }}
+      site-bucket-name: ${{ vars.SITE_BUCKET_NAME }}
+      acm-certificate-arn: ${{ vars.SITE_ACM_CERTIFICATE_ARN }}

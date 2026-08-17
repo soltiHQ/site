@@ -1,0 +1,11 @@
+$effects: (
+  glass-blur: 0.2rem,
+  glass-saturation: 100%,
+  glass-opacity: 8%,
+);
+
+@mixin emit-effects {
+  @each $name, $value in $effects {
+    --effect-#{$name}: #{$value};
+  }
+}

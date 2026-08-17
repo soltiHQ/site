@@ -1,0 +1,7 @@
+@layer objects {
+  .o-full-bleed {
+    width: 100vw;
+    max-width: none;
+    margin-inline: calc(50% - 50vw);
+  }
+}

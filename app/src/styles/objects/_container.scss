@@ -1,0 +1,29 @@
+@use '../settings';
+
+@layer objects {
+  .o-container {
+    width: min(
+      calc(100% - (var(--layout-gutter) * 2)),
+      var(--layout-container)
+    );
+    margin-inline: auto;
+  }
+
+  @media (max-width: settings.$breakpoint-wide) {
+    .o-container {
+      width: min(
+        calc(100% - (var(--layout-gutter-medium) * 2)),
+        var(--layout-container)
+      );
+    }
+  }
+
+  @media (max-width: settings.$breakpoint-compact) {
+    .o-container {
+      width: min(
+        calc(100% - (var(--layout-gutter-compact) * 2)),
+        var(--layout-container)
+      );
+    }
+  }
+}

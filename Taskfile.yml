@@ -1,0 +1,64 @@
+version: '3'
+
+includes:
+  aws:
+    taskfile: https://raw.githubusercontent.com/soltiHQ/actions/v1/taskfiles/aws/Taskfile.yml
+  node:
+    taskfile: https://raw.githubusercontent.com/soltiHQ/actions/v1/taskfiles/node/Taskfile.yml
+  terraform:
+    taskfile: https://raw.githubusercontent.com/soltiHQ/actions/v1/taskfiles/terraform/Taskfile.yml
+
+tasks:
+  ci/type-check:
+    desc: Type-check the Vue application.
+    cmds:
+      - task: node:type-check
+
+  ci/build:
+    desc: Build the production site.
+    cmds:
+      - task: node:build
+
+  ci/audit:
+    desc: Audit production and development dependencies.
+    cmds:
+      - task: node:audit
+
+  ci/terraform-fmt:
+    desc: Check Terraform formatting.
+    cmds:
+      - task: terraform:fmt
+
+  ci/terraform-validate:
+    desc: Initialize Terraform without a backend and validate the configuration.
+    cmds:
+      - task: terraform:validate
+
+  cd/terraform-apply:
+    desc: Apply production infrastructure changes.
+    requires:
+      vars: [ TF_BACKEND_BUCKET, TF_BACKEND_KEY, TF_BACKEND_REGION ]
+    cmds:
+      - task: terraform:apply
+        vars:
+          BACKEND_BUCKET: '{{.TF_BACKEND_BUCKET}}'
+          BACKEND_KEY: '{{.TF_BACKEND_KEY}}'
+          BACKEND_REGION: '{{.TF_BACKEND_REGION}}'
+
+  cd/deploy:
+    desc: Upload the built site and wait for CloudFront invalidation.
+    requires:
+      vars: [ SITE_BUCKET_NAME, CLOUDFRONT_DISTRIBUTION_ID ]
+    cmds:
+      - task: aws:s3/publish
+        vars:
+          SOURCE_DIR: app/dist
+          BUCKET: '{{.SITE_BUCKET_NAME}}'
+      - task: aws:cloudfront/invalidate
+        vars:
+          DISTRIBUTION_ID: '{{.CLOUDFRONT_DISTRIBUTION_ID}}'
+
+  terraform/fmt:
+    desc: Format Terraform files.
+    cmds:
+      - task: terraform:fmt/fix

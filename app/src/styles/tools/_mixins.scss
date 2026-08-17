@@ -1,0 +1,61 @@
+@mixin focus-ring($color: var(--color-focus)) {
+  outline: var(--stroke-edge) solid $color;
+  outline-offset: var(--sp-1);
+}
+
+@mixin glass-surface {
+  background: color-mix(
+    in srgb,
+    var(--color-canvas) var(--effect-glass-opacity),
+    transparent
+  );
+  backdrop-filter: blur(var(--effect-glass-blur)) saturate(var(--effect-glass-saturation));
+  -webkit-backdrop-filter: blur(var(--effect-glass-blur))
+    saturate(var(--effect-glass-saturation));
+}
+
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  padding: 0;
+  border: 0;
+  margin: -1px;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+@mixin canvas-context {
+  --color-text: var(--theme-color-text);
+  --color-text-muted: var(--theme-color-text-muted);
+  --color-text-subtle: var(--theme-color-text-subtle);
+  --color-border: var(--theme-color-border);
+  --color-focus: var(--theme-color-focus);
+  --color-danger-text: var(--theme-color-danger-text);
+  --color-action: var(--theme-color-action);
+  --color-action-border: var(--theme-color-action-border);
+  --color-action-hover: var(--theme-color-action-hover);
+  --color-action-hover-border: var(--theme-color-action-hover-border);
+  --color-action-danger: var(--theme-color-action);
+  --color-action-danger-hover: var(--theme-color-action);
+
+  color: var(--color-text);
+}
+
+@mixin inverse-context {
+  --color-text: var(--color-text-inverse);
+  --color-text-muted: var(--color-text-inverse-muted);
+  --color-text-subtle: var(--color-text-inverse-muted);
+  --color-border: var(--color-border-inverse);
+  --color-focus: var(--color-accent-on-dark);
+  --color-danger-text: var(--color-text-inverse);
+  --color-action: var(--color-text-inverse);
+  --color-action-border: var(--color-text-inverse-muted);
+  --color-action-hover: var(--color-accent-on-dark);
+  --color-action-hover-border: var(--color-accent-on-dark);
+  --color-action-danger: var(--color-text-inverse);
+  --color-action-danger-hover: var(--color-text-inverse);
+
+  color: var(--color-text-inverse);
+}

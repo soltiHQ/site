@@ -1,0 +1,41 @@
+@layer elements {
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: inherit;
+    font-family: var(--font-heading);
+    font-weight: var(--font-weight-semibold);
+    letter-spacing: var(--tracking-heading);
+    line-height: var(--line-height-heading);
+  }
+
+  h1 {
+    font-size: var(--font-size-h1);
+  }
+
+  h2 {
+    font-size: var(--font-size-h2);
+  }
+
+  h3,
+  h4 {
+    font-size: var(--font-size-h3);
+  }
+
+  // The guideline has no h4 size; h4 intentionally reuses the smallest verified heading step.
+
+  p {
+    max-width: var(--measure-body);
+  }
+
+  small {
+    font-size: var(--font-size-caption);
+  }
+
+  code,
+  kbd,
+  pre {
+    font-family: var(--font-mono);
+  }
+}

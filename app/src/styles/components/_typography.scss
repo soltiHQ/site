@@ -1,0 +1,59 @@
+@layer components {
+  .c-heading {
+    max-width: var(--measure-wide);
+  }
+
+  .c-heading--display {
+    font-size: var(--font-size-display);
+  }
+
+  .c-heading--h1 {
+    font-size: var(--font-size-h1);
+  }
+
+  .c-heading--h2 {
+    font-size: var(--font-size-h2);
+  }
+
+  .c-heading--h3 {
+    font-size: var(--font-size-h3);
+  }
+
+  .c-text {
+    max-width: var(--measure-body);
+  }
+
+  .c-text--small {
+    font-size: var(--font-size-small);
+  }
+
+  .c-text--caption {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-caption);
+  }
+
+  .c-text--muted {
+    color: var(--color-text-muted);
+  }
+
+  .c-text--subtle {
+    color: var(--color-text-subtle);
+  }
+
+  .c-label {
+    color: var(--color-text-subtle);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-caption);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+
+  .c-divider {
+    width: 100%;
+    height: var(--stroke-hair);
+    border: 0;
+    margin: 0;
+    background: var(--color-border);
+  }
+}

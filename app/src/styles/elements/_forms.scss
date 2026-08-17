@@ -1,0 +1,37 @@
+@use '../tools';
+
+@layer elements {
+  input,
+  textarea,
+  select {
+    width: 100%;
+    border: var(--stroke-node) solid var(--theme-color-border);
+    border-radius: var(--radius-node);
+    background: var(--theme-color-canvas);
+    color: var(--theme-color-text);
+  }
+
+  input,
+  select {
+    min-height: var(--control-field-height);
+  }
+
+  textarea {
+    min-height: var(--control-textarea-height);
+    resize: vertical;
+  }
+
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    border-color: var(--color-accent-strong);
+    @include tools.focus-ring(var(--theme-color-focus));
+  }
+
+  input:disabled,
+  textarea:disabled,
+  select:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+}

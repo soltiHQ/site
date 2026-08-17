@@ -1,0 +1,43 @@
+@use '../settings';
+@use '../tools';
+
+@layer components {
+  .c-view-section--subtle {
+    background: var(--color-surface);
+  }
+
+  .c-view-section--inverse {
+    @include tools.inverse-context;
+
+    background: var(--color-canvas-inverse);
+    color: var(--color-text-inverse);
+  }
+
+  .c-base-view {
+    min-height: calc(100vh - var(--layout-footer-height));
+    padding-top: calc(var(--layout-header-height) + var(--sp-6));
+  }
+
+  .c-view-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(var(--measure-view-side), 0.8fr);
+    gap: clamp(var(--sp-6), 7vw, calc(var(--sp-8) * 1.5));
+    align-items: end;
+  }
+
+  .c-view-header__copy {
+    display: grid;
+    gap: var(--sp-5);
+  }
+
+  .c-view-header__lede {
+    color: var(--color-text-muted);
+  }
+
+  @media (max-width: settings.$breakpoint-medium) {
+    .c-view-header {
+      grid-template-columns: 1fr;
+      gap: var(--sp-5);
+    }
+  }
+}
