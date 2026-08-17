@@ -1,6 +1,72 @@
 @use '../settings';
 
 @layer views {
+  html.has-active-preloader {
+    overflow: hidden;
+    scrollbar-gutter: stable;
+  }
+
+  html.has-active-preloader body {
+    overflow: hidden;
+  }
+
+  .content-view__preloader {
+    position: fixed;
+    z-index: calc(var(--layer-skip-link) + 1);
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: var(--color-canvas);
+  }
+
+  .content-view__preloader-mark {
+    display: grid;
+    justify-items: center;
+    gap: var(--sp-4);
+  }
+
+  .content-view__preloader-logo {
+    display: block;
+    width: 4rem;
+    height: auto;
+  }
+
+  .content-view__preloader-track {
+    position: relative;
+    width: 4rem;
+    height: var(--stroke-hair);
+    overflow: hidden;
+    background: var(--color-border);
+  }
+
+  .content-view__preloader-track::after {
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 38%;
+    background: var(--color-accent);
+    content: '';
+    animation: content-view-preloader-progress 1.1s var(--ease-standard) infinite;
+  }
+
+  .content-view-preloader-leave-active {
+    transition: opacity var(--duration-slow) var(--ease-standard);
+  }
+
+  .content-view-preloader-leave-to {
+    opacity: 0;
+  }
+
+  @keyframes content-view-preloader-progress {
+    from {
+      transform: translateX(-110%);
+    }
+
+    to {
+      transform: translateX(375%);
+    }
+  }
+
   .content-view {
     position: relative;
     min-height: 0;
@@ -196,6 +262,16 @@
     .content-view__hero-lede {
       max-width: 25rem;
       font-size: var(--font-size-body);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .content-view__preloader-track::after {
+      left: 50%;
+      width: 38%;
+      animation: none;
+      opacity: 0.6;
+      transform: translateX(-50%);
     }
   }
 }

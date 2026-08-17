@@ -48,6 +48,7 @@
       "hero": {
         "title": "Compose systems.",
         "lede": "From in-process supervision to agents and central control.",
+        "loading": "Loading Solti",
         "labels": {
           "podium": "Podium",
           "sdk": "SDK",
