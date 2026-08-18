@@ -4,7 +4,7 @@ import { siteContent } from '@/contents'
 </script>
 
 <template>
-  <footer class="site-footer">
+  <footer class="site-footer" data-chrome-theme="dark">
     <div class="o-container site-footer__inner">
       <SoltiWordmark
         :label="siteContent.brand.name"

@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "Solti — Modular task-execution stack",
-    "description": "Supervise work in Tokio services, build agents for subprocess or container workloads, and add central control with Taskvisor, Solti SDK, and Podium."
+    "description": "An open-source path from in-process task supervision to composable Rust agents and evolving central coordination with Taskvisor, Solti SDK, and Podium."
   },
   "brand": {
     "name": "Solti",
@@ -9,6 +9,8 @@
   },
   "links": {
     "github": "https://github.com/soltiHQ",
+    "contributing": "https://github.com/soltiHQ/.github/blob/main/CONTRIBUTING.md",
+    "agentOverview": "https://github.com/soltiHQ/dashboards/tree/main/solti/agent-overview",
     "mainContent": "#main-content",
     "stack": "#stack"
   },
@@ -58,15 +60,15 @@
       },
       "composition": {
         "eyebrow": "How it composes",
-        "title": "One stack. Three explicit boundaries.",
+        "title": "One operating model. Three explicit boundaries.",
         "lede": "The stack separates system coordination, agent behavior, and in-process lifecycle. Each boundary has a distinct contract and a distinct integration model.",
         "levels": [
           {
             "index": "01",
-            "scope": "Control-plane service",
+            "scope": "Control-plane project",
             "product": "Podium",
-            "title": "Discover agents and reconcile rollouts.",
-            "body": "A Go service that manages task specifications, agent discovery, and per-agent rollout state. It applies desired specifications through versioned HTTP or gRPC agent APIs.",
+            "title": "Coordinate agents and per-agent rollouts.",
+            "body": "An early Go control-plane project for agent discovery, task specifications, and per-agent rollout state. Its versioned agent integration is still evolving.",
             "action": "View Podium source ↗",
             "href": "https://github.com/soltiHQ/podium"
           },
@@ -89,6 +91,164 @@
             "href": "https://github.com/soltiHQ/taskvisor"
           }
         ]
+      },
+      "proof": {
+        "eyebrow": "A real Task",
+        "title": "Desired state in. Runtime state out.",
+        "lede": "Start with the smallest useful workload: one subprocess Task. The SDK commits desired state, routes it to a registered runner, uses Taskvisor to supervise the attempt, and exposes reconciliation, live output, terminal state, and bounded run history.",
+        "manifest": {
+          "index": "01",
+          "label": "Task manifest",
+          "filename": "task_subprocess.rs",
+          "lines": [
+            "let workload = TaskWorkload::Subprocess(",
+            "    SubprocessSpec::new(",
+            "        SubprocessMode::Command {",
+            "            command,",
+            "            args: vec![CHILD_MODE.into(), child_address],",
+            "        },",
+            "        TaskEnv::new(),",
+            "        None,",
+            "        Flag::enabled(),",
+            "    ),",
+            ");",
+            "",
+            "let spec = TaskSpec::builder(\"example\", workload, 30_000_u64)",
+            "    .restart(RestartPolicy::Never)",
+            "    .build()?;",
+            "let manifest = TaskManifest::new(\"subprocess-example\", spec)?;",
+            "",
+            "let committed = supervisor.create_task(manifest).await?;"
+          ]
+        },
+        "trace": {
+          "index": "02",
+          "label": "Observed lifecycle",
+          "source": "task_subprocess",
+          "command": "$ cargo run -p solti --example task_subprocess --features core,exec-subprocess",
+          "lines": [
+            {
+              "tone": "state",
+              "text": "committed subprocess-example generation 1"
+            },
+            {
+              "tone": "success",
+              "text": "Reconciled=True reason=RuntimeAccepted"
+            },
+            {
+              "tone": "stream",
+              "text": "live Stdout: child stdout"
+            },
+            {
+              "tone": "stream",
+              "text": "live Stderr: child stderr"
+            },
+            {
+              "tone": "success",
+              "text": "terminal phase=succeeded"
+            },
+            {
+              "tone": "state",
+              "text": "run generation=1 attempt=1 phase=succeeded"
+            }
+          ]
+        },
+        "facts": [
+          {
+            "label": "Contract",
+            "value": "TaskManifest"
+          },
+          {
+            "label": "Execution",
+            "value": "Subprocess → registered runner"
+          },
+          {
+            "label": "Evidence",
+            "value": "State, output, history"
+          }
+        ],
+        "transition": "create_task",
+        "note": "Core state and live output are process-local.",
+        "actions": [
+          {
+            "label": "Run the complete example ↗",
+            "href": "https://github.com/soltiHQ/sdk/blob/main/crates/solti/examples/task_subprocess.rs"
+          },
+          {
+            "label": "Read the Task API contract ↗",
+            "href": "https://github.com/soltiHQ/sdk/blob/main/crates/solti-api/CONTRACT.md"
+          }
+        ]
+      },
+      "model": {
+        "eyebrow": "The Solti idea",
+        "title": "The workload is not the system.",
+        "lede": "You define what should run. Solti keeps execution, supervision, reconciliation, and coordination as separate contracts, so you can start in-process and add the next boundary only when you need it.",
+        "signals": {
+          "desired": "Desired state",
+          "desiredDetail": "TaskManifest",
+          "desiredDirection": "Moves through the boundaries toward execution.",
+          "evidence": "Runtime evidence",
+          "evidenceDetail": "Task status · live output · bounded run history",
+          "evidenceDirection": "Returns through the boundaries toward coordination."
+        },
+        "boundaries": {
+          "system": {
+            "scope": "System boundary",
+            "product": "Podium",
+            "adoption": "Integration evolving",
+            "title": "Coordinate",
+            "responsibilities": [
+              "Agents",
+              "API version",
+              "Desired spec"
+            ]
+          },
+          "agent": {
+            "scope": "Agent boundary",
+            "product": "SDK",
+            "adoption": "Build an agent",
+            "title": "Reconcile",
+            "responsibilities": [
+              "Commit",
+              "Route",
+              "Report"
+            ]
+          },
+          "process": {
+            "scope": "Process boundary",
+            "product": "Taskvisor",
+            "adoption": "Use on its own",
+            "title": "Supervise",
+            "responsibilities": [
+              "Retry",
+              "Timeout",
+              "Cancel"
+            ]
+          }
+        },
+        "workload": {
+          "scope": "Workload",
+          "title": "Execute",
+          "options": [
+            "Subprocess",
+            "containerd",
+            "Your runner"
+          ]
+        },
+        "commons": {
+          "eyebrow": "Operational commons",
+          "title": "See the runtime as a system.",
+          "body": "Agent Overview is an Apache-2.0 Grafana dashboard designed to bring fleet health, task state, lifecycle, API, discovery, and host metrics into one view.",
+          "action": "Explore Agent Overview ↗"
+        },
+        "openSource": {
+          "eyebrow": "Built in public",
+          "title": "Use one component. Help shape what comes next.",
+          "body": "Solti is early and Apache-2.0. Found a bug or have an idea? Open an issue. Larger changes should start there, with each pull request focused on one change.",
+          "action": "Explore Solti on GitHub ↗",
+          "contributeAction": "Read the contribution guide ↗"
+        }
       }
     }
   },

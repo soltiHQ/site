@@ -235,7 +235,11 @@ onBeforeUnmount(() => {
   </Teleport>
 
   <BaseView class="content-view" :aria-busy="isHeroLoading ? 'true' : 'false'">
-    <section class="content-view__hero" aria-labelledby="hero-title">
+    <section
+      class="content-view__hero"
+      aria-labelledby="hero-title"
+      data-chrome-theme="light"
+    >
       <div class="content-view__hero-visual" aria-hidden="true">
         <video
           ref="heroVideo"
@@ -335,6 +339,7 @@ onBeforeUnmount(() => {
       id="stack"
       class="content-view__composition"
       aria-labelledby="stack-title"
+      data-chrome-theme="light"
     >
       <BaseContainer class="content-view__composition-inner">
         <header class="content-view__composition-intro">
@@ -394,6 +399,410 @@ onBeforeUnmount(() => {
             </div>
           </li>
         </ol>
+      </BaseContainer>
+    </section>
+
+    <section
+      id="proof"
+      class="content-view__proof"
+      aria-labelledby="proof-title"
+      data-chrome-theme="dark"
+    >
+      <BaseContainer class="content-view__proof-inner">
+        <header class="content-view__proof-intro">
+          <BaseText
+            as="p"
+            size="caption"
+            tone="subtle"
+            class="content-view__proof-eyebrow"
+          >
+            {{ pageContent.proof.eyebrow }}
+          </BaseText>
+          <BaseHeading
+            id="proof-title"
+            as="h2"
+            size="h1"
+            class="content-view__proof-title"
+          >
+            {{ pageContent.proof.title }}
+          </BaseHeading>
+          <BaseText tone="muted" class="content-view__proof-lede">
+            {{ pageContent.proof.lede }}
+          </BaseText>
+        </header>
+
+        <div class="content-view__proof-workbench">
+          <article
+            class="content-view__proof-panel content-view__proof-panel--manifest"
+            aria-labelledby="proof-manifest-title"
+          >
+            <header class="content-view__proof-panel-header">
+              <div class="content-view__proof-panel-heading">
+                <span class="content-view__proof-panel-index" aria-hidden="true">
+                  {{ pageContent.proof.manifest.index }}
+                </span>
+                <BaseHeading
+                  id="proof-manifest-title"
+                  as="h3"
+                  size="h3"
+                  class="content-view__proof-panel-title"
+                >
+                  {{ pageContent.proof.manifest.label }}
+                </BaseHeading>
+              </div>
+              <span class="content-view__proof-panel-source">
+                {{ pageContent.proof.manifest.filename }}
+              </span>
+            </header>
+            <pre
+              class="content-view__proof-code"
+              tabindex="0"
+            ><code><span
+              v-for="(line, index) in pageContent.proof.manifest.lines"
+              :key="`${index}-${line}`"
+              class="content-view__proof-code-line"
+            >{{ line || ' ' }}</span></code></pre>
+          </article>
+
+          <div class="content-view__proof-connector" aria-hidden="true">
+            <span>{{ pageContent.proof.transition }}</span>
+          </div>
+
+          <article
+            class="content-view__proof-panel content-view__proof-panel--trace"
+            aria-labelledby="proof-trace-title"
+          >
+            <header class="content-view__proof-panel-header">
+              <div class="content-view__proof-panel-heading">
+                <span class="content-view__proof-panel-index" aria-hidden="true">
+                  {{ pageContent.proof.trace.index }}
+                </span>
+                <BaseHeading
+                  id="proof-trace-title"
+                  as="h3"
+                  size="h3"
+                  class="content-view__proof-panel-title"
+                >
+                  {{ pageContent.proof.trace.label }}
+                </BaseHeading>
+              </div>
+              <span class="content-view__proof-panel-source">
+                {{ pageContent.proof.trace.source }}
+              </span>
+            </header>
+            <pre
+              class="content-view__proof-code content-view__proof-code--trace"
+              tabindex="0"
+            ><code><span class="content-view__proof-trace-command">{{ pageContent.proof.trace.command }}</span><span
+              v-for="line in pageContent.proof.trace.lines"
+              :key="line.text"
+              :class="[
+                'content-view__proof-code-line',
+                `content-view__proof-code-line--${line.tone}`,
+              ]"
+            >{{ line.text }}</span></code></pre>
+          </article>
+        </div>
+
+        <div class="content-view__proof-footer">
+          <dl class="content-view__proof-facts">
+            <div
+              v-for="fact in pageContent.proof.facts"
+              :key="fact.label"
+              class="content-view__proof-fact"
+            >
+              <dt>{{ fact.label }}</dt>
+              <dd>{{ fact.value }}</dd>
+            </div>
+          </dl>
+
+          <div class="content-view__proof-actions">
+            <BaseText as="p" size="small" tone="subtle" class="content-view__proof-note">
+              {{ pageContent.proof.note }}
+            </BaseText>
+            <div class="content-view__proof-action-list">
+              <BaseActionLink
+                v-for="(action, index) in pageContent.proof.actions"
+                :key="action.href"
+                :href="action.href"
+                :variant="index === 0 ? 'primary' : 'secondary'"
+                external
+              >
+                {{ action.label }}
+              </BaseActionLink>
+            </div>
+          </div>
+        </div>
+      </BaseContainer>
+    </section>
+
+    <section
+      id="model"
+      class="content-view__model"
+      aria-labelledby="model-title"
+      data-chrome-theme="light"
+    >
+      <BaseContainer class="content-view__model-inner">
+        <header class="content-view__model-intro">
+          <BaseText
+            as="p"
+            size="caption"
+            tone="subtle"
+            class="content-view__model-eyebrow"
+          >
+            {{ pageContent.model.eyebrow }}
+          </BaseText>
+          <BaseHeading
+            id="model-title"
+            as="h2"
+            size="h1"
+            class="content-view__model-title"
+          >
+            {{ pageContent.model.title }}
+          </BaseHeading>
+          <BaseText tone="muted" class="content-view__model-lede">
+            {{ pageContent.model.lede }}
+          </BaseText>
+        </header>
+
+        <figure class="content-view__model-map">
+          <div class="content-view__model-diagram">
+            <p class="content-view__model-signal content-view__model-signal--desired">
+              <span class="content-view__model-signal-copy">
+                <strong>{{ pageContent.model.signals.desired }}</strong>
+                <span>{{ pageContent.model.signals.desiredDetail }}</span>
+                <span class="u-visually-hidden">
+                  {{ pageContent.model.signals.desiredDirection }}
+                </span>
+              </span>
+              <span class="content-view__model-signal-line" aria-hidden="true"></span>
+            </p>
+
+            <ol class="content-view__model-stages">
+              <li class="content-view__model-stage content-view__model-stage--system">
+                <header class="content-view__model-stage-copy">
+                  <p class="content-view__model-stage-meta">
+                    {{ pageContent.model.boundaries.system.scope }}
+                  </p>
+                  <div class="content-view__model-stage-context">
+                    <BaseText
+                      as="p"
+                      size="small"
+                      tone="subtle"
+                      class="content-view__model-stage-product"
+                    >
+                      {{ pageContent.model.boundaries.system.product }}
+                    </BaseText>
+                    <span class="content-view__model-stage-adoption">
+                      {{ pageContent.model.boundaries.system.adoption }}
+                    </span>
+                  </div>
+                  <BaseHeading
+                    id="model-system-title"
+                    as="h3"
+                    size="h2"
+                    class="content-view__model-stage-title"
+                  >
+                    {{ pageContent.model.boundaries.system.title }}
+                  </BaseHeading>
+                </header>
+                <ul class="content-view__model-responsibilities">
+                  <li
+                    v-for="item in pageContent.model.boundaries.system.responsibilities"
+                    :key="item"
+                  >
+                    {{ item }}
+                  </li>
+                </ul>
+              </li>
+
+              <li class="content-view__model-stage content-view__model-stage--agent">
+                <header class="content-view__model-stage-copy">
+                  <p class="content-view__model-stage-meta">
+                    {{ pageContent.model.boundaries.agent.scope }}
+                  </p>
+                  <div class="content-view__model-stage-context">
+                    <BaseText
+                      as="p"
+                      size="small"
+                      tone="subtle"
+                      class="content-view__model-stage-product"
+                    >
+                      {{ pageContent.model.boundaries.agent.product }}
+                    </BaseText>
+                    <span class="content-view__model-stage-adoption">
+                      {{ pageContent.model.boundaries.agent.adoption }}
+                    </span>
+                  </div>
+                  <BaseHeading
+                    id="model-agent-title"
+                    as="h3"
+                    size="h2"
+                    class="content-view__model-stage-title"
+                  >
+                    {{ pageContent.model.boundaries.agent.title }}
+                  </BaseHeading>
+                </header>
+                <ul class="content-view__model-responsibilities">
+                  <li
+                    v-for="item in pageContent.model.boundaries.agent.responsibilities"
+                    :key="item"
+                  >
+                    {{ item }}
+                  </li>
+                </ul>
+              </li>
+
+              <li class="content-view__model-stage content-view__model-stage--process">
+                <header class="content-view__model-stage-copy">
+                  <p class="content-view__model-stage-meta">
+                    {{ pageContent.model.boundaries.process.scope }}
+                  </p>
+                  <div class="content-view__model-stage-context">
+                    <BaseText
+                      as="p"
+                      size="small"
+                      tone="subtle"
+                      class="content-view__model-stage-product"
+                    >
+                      {{ pageContent.model.boundaries.process.product }}
+                    </BaseText>
+                    <span class="content-view__model-stage-adoption">
+                      {{ pageContent.model.boundaries.process.adoption }}
+                    </span>
+                  </div>
+                  <BaseHeading
+                    id="model-process-title"
+                    as="h3"
+                    size="h2"
+                    class="content-view__model-stage-title"
+                  >
+                    {{ pageContent.model.boundaries.process.title }}
+                  </BaseHeading>
+                </header>
+                <ul class="content-view__model-responsibilities">
+                  <li
+                    v-for="item in pageContent.model.boundaries.process.responsibilities"
+                    :key="item"
+                  >
+                    {{ item }}
+                  </li>
+                </ul>
+              </li>
+
+              <li class="content-view__model-stage content-view__model-stage--workload">
+                <header class="content-view__model-stage-copy">
+                  <p class="content-view__model-stage-meta">
+                    {{ pageContent.model.workload.scope }}
+                  </p>
+                  <BaseHeading
+                    id="model-workload-title"
+                    as="h3"
+                    size="h2"
+                    class="content-view__model-stage-title"
+                  >
+                    {{ pageContent.model.workload.title }}
+                  </BaseHeading>
+                </header>
+                <ul class="content-view__model-responsibilities">
+                  <li
+                    v-for="item in pageContent.model.workload.options"
+                    :key="item"
+                  >
+                    {{ item }}
+                  </li>
+                </ul>
+              </li>
+            </ol>
+
+            <p class="content-view__model-signal content-view__model-signal--evidence">
+              <span class="content-view__model-signal-line" aria-hidden="true"></span>
+              <span class="content-view__model-signal-copy">
+                <strong>{{ pageContent.model.signals.evidence }}</strong>
+                <span>{{ pageContent.model.signals.evidenceDetail }}</span>
+                <span class="u-visually-hidden">
+                  {{ pageContent.model.signals.evidenceDirection }}
+                </span>
+              </span>
+            </p>
+          </div>
+
+        </figure>
+
+        <div class="content-view__model-outro">
+          <aside
+            class="content-view__model-commons"
+            aria-labelledby="model-commons-title"
+          >
+            <BaseText
+              as="p"
+              size="caption"
+              tone="subtle"
+              class="content-view__model-commons-eyebrow"
+            >
+              {{ pageContent.model.commons.eyebrow }}
+            </BaseText>
+            <div class="content-view__model-commons-copy">
+              <BaseHeading
+                id="model-commons-title"
+                as="h3"
+                size="h3"
+                class="content-view__model-commons-title"
+              >
+                {{ pageContent.model.commons.title }}
+              </BaseHeading>
+              <BaseText tone="muted" class="content-view__model-commons-body">
+                {{ pageContent.model.commons.body }}
+              </BaseText>
+            </div>
+            <BaseActionLink
+              :href="siteContent.links.agentOverview"
+              variant="secondary"
+              external
+            >
+              {{ pageContent.model.commons.action }}
+            </BaseActionLink>
+          </aside>
+
+          <aside
+            class="content-view__model-open-source"
+            aria-labelledby="model-open-source-title"
+          >
+            <div class="content-view__model-open-source-copy">
+              <BaseText
+                as="p"
+                size="caption"
+                tone="subtle"
+                class="content-view__model-open-source-eyebrow"
+              >
+                {{ pageContent.model.openSource.eyebrow }}
+              </BaseText>
+              <BaseHeading
+                id="model-open-source-title"
+                as="h3"
+                size="h2"
+                class="content-view__model-open-source-title"
+              >
+                {{ pageContent.model.openSource.title }}
+              </BaseHeading>
+              <BaseText tone="muted" class="content-view__model-open-source-body">
+                {{ pageContent.model.openSource.body }}
+              </BaseText>
+            </div>
+            <div class="content-view__model-open-source-actions">
+              <BaseActionLink :href="siteContent.links.github" variant="primary" external>
+                {{ pageContent.model.openSource.action }}
+              </BaseActionLink>
+              <BaseActionLink
+                :href="siteContent.links.contributing"
+                variant="secondary"
+                external
+              >
+                {{ pageContent.model.openSource.contributeAction }}
+              </BaseActionLink>
+            </div>
+          </aside>
+        </div>
       </BaseContainer>
     </section>
   </BaseView>

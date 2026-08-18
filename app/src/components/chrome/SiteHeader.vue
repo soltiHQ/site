@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import soltiWordDarkUrl from '@/assets/word/solti-word-dark.svg'
-import { useHeaderScrollState } from '@/composables/useHeaderScrollState'
+import SoltiWordmark from '@/components/brand/SoltiWordmark.vue'
+import { usePageChrome } from '@/composables/usePageChrome'
 import { siteContent } from '@/contents'
 
-const { isScrolled } = useHeaderScrollState()
+const { activeTheme, isScrolled } = usePageChrome()
 </script>
 
 <template>
   <header
     :class="['site-header', { 'site-header--scrolled': isScrolled }]"
+    :data-active-chrome-theme="activeTheme"
+    data-chrome-probe
   >
     <div class="site-header__glass">
       <div class="site-header__inner">
@@ -17,12 +19,12 @@ const { isScrolled } = useHeaderScrollState()
           :to="{ name: 'content' }"
           :aria-label="siteContent.accessibility.home"
         >
-          <img
-            class="site-header__brand-word-logo"
-            :src="soltiWordDarkUrl"
-            alt=""
-            width="202"
-            height="108"
+          <SoltiWordmark
+            class="site-header__brand-wordmark"
+            :label="siteContent.brand.name"
+            :wordmark="siteContent.brand.wordmark"
+            :inverse="activeTheme === 'dark'"
+            decorative
           />
         </RouterLink>
 
