@@ -324,10 +324,76 @@ onBeforeUnmount(() => {
           <BaseText class="content-view__hero-lede" tone="muted">
             {{ pageContent.hero.lede }}
           </BaseText>
-          <BaseActionLink :href="siteContent.links.github" external variant="primary">
+          <BaseActionLink :href="siteContent.links.stack" variant="primary">
             {{ siteContent.actions.explore }}
           </BaseActionLink>
         </div>
+      </BaseContainer>
+    </section>
+
+    <section
+      id="stack"
+      class="content-view__composition"
+      aria-labelledby="stack-title"
+    >
+      <BaseContainer class="content-view__composition-inner">
+        <header class="content-view__composition-intro">
+          <BaseText
+            as="p"
+            size="caption"
+            tone="subtle"
+            class="content-view__composition-eyebrow"
+          >
+            {{ pageContent.composition.eyebrow }}
+          </BaseText>
+          <BaseHeading
+            id="stack-title"
+            as="h2"
+            size="h1"
+            class="content-view__composition-title"
+          >
+            {{ pageContent.composition.title }}
+          </BaseHeading>
+          <BaseText tone="muted" class="content-view__composition-lede">
+            {{ pageContent.composition.lede }}
+          </BaseText>
+        </header>
+
+        <ol class="content-view__composition-levels">
+          <li
+            v-for="level in pageContent.composition.levels"
+            :key="level.index"
+            class="content-view__composition-level"
+          >
+            <div class="content-view__composition-meta">
+              <span class="content-view__composition-index" aria-hidden="true">
+                {{ level.index }}
+              </span>
+              <span class="content-view__composition-scope">{{ level.scope }}</span>
+            </div>
+            <div class="content-view__composition-copy">
+              <BaseHeading
+                as="h3"
+                size="h2"
+                class="content-view__composition-product"
+              >
+                {{ level.product }}
+              </BaseHeading>
+              <span class="content-view__composition-role">{{ level.title }}</span>
+              <BaseText tone="muted" class="content-view__composition-level-body">
+                {{ level.body }}
+              </BaseText>
+              <a
+                class="content-view__composition-link"
+                :href="level.href"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {{ level.action }}
+              </a>
+            </div>
+          </li>
+        </ol>
       </BaseContainer>
     </section>
   </BaseView>

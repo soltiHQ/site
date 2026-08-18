@@ -9,7 +9,8 @@
   },
   "links": {
     "github": "https://github.com/soltiHQ",
-    "mainContent": "#main-content"
+    "mainContent": "#main-content",
+    "stack": "#stack"
   },
   "accessibility": {
     "skipToContent": "Skip to content",
@@ -20,7 +21,7 @@
   "actions": {
     "source": "Source ↗",
     "top": "Top ↑",
-    "explore": "Explore Solti ↗"
+    "explore": "Explore the stack ↓"
   },
   "media": {
     "hero": {
@@ -54,6 +55,40 @@
           "sdk": "SDK",
           "taskvisor": "Taskvisor"
         }
+      },
+      "composition": {
+        "eyebrow": "How it composes",
+        "title": "One stack. Three explicit boundaries.",
+        "lede": "The stack separates system coordination, agent behavior, and in-process lifecycle. Each boundary has a distinct contract and a distinct integration model.",
+        "levels": [
+          {
+            "index": "01",
+            "scope": "Control-plane service",
+            "product": "Podium",
+            "title": "Discover agents and reconcile rollouts.",
+            "body": "A Go service that manages task specifications, agent discovery, and per-agent rollout state. It applies desired specifications through versioned HTTP or gRPC agent APIs.",
+            "action": "View Podium source ↗",
+            "href": "https://github.com/soltiHQ/podium"
+          },
+          {
+            "index": "02",
+            "scope": "Agent SDK",
+            "product": "SDK",
+            "title": "Build your own task-execution agent.",
+            "body": "Composable Rust crates provide Task resources, workload routing, desired-state reconciliation, execution backends, and optional HTTP or gRPC APIs. Your team selects the components and owns configuration, deployment, and the final security boundary.",
+            "action": "Explore the SDK ↗",
+            "href": "https://github.com/soltiHQ/sdk"
+          },
+          {
+            "index": "03",
+            "scope": "In-process Rust library",
+            "product": "Taskvisor",
+            "title": "Supervise Tokio work in-process.",
+            "body": "A Rust library for retries, backoff, attempt timeouts, cancellation, and graceful shutdown. Watched tasks return direct final outcomes; optional per-key admission can queue, replace, or reject competing work.",
+            "action": "Explore Taskvisor ↗",
+            "href": "https://github.com/soltiHQ/taskvisor"
+          }
+        ]
       }
     }
   },
