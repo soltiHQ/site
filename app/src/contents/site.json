@@ -1,7 +1,10 @@
 {
   "meta": {
+    "url": "https://solti.io/",
     "title": "Solti — Modular task-execution stack",
-    "description": "An open-source path from in-process task supervision to composable Rust agents and evolving central coordination with Taskvisor, Solti SDK, and Podium."
+    "description": "An open-source path from in-process task supervision to composable Rust agents and evolving central coordination with Taskvisor, Solti SDK, and Podium.",
+    "imageUrl": "https://solti.io/og.png",
+    "imageAlt": "Solti Compose systems social preview with an engraved conductor and flowing system lines."
   },
   "brand": {
     "name": "Solti",
@@ -196,7 +199,7 @@
           "system": {
             "scope": "System boundary",
             "product": "Podium",
-            "adoption": "Integration evolving",
+            "adoption": "Agent contract aligning with the SDK",
             "title": "Coordinate",
             "responsibilities": [
               "Agents",
@@ -232,7 +235,7 @@
           "title": "Execute",
           "options": [
             "Subprocess",
-            "containerd",
+            "containerd · Linux only",
             "Your runner"
           ]
         },
