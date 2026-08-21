@@ -15,6 +15,15 @@ const isHeroLoading = ref(true)
 const pageContent = siteContent.pages.content
 const heroMedia = siteContent.media.hero
 const HERO_LOADING_TIMEOUT_MS = 8_000
+type SiteLinkKey = keyof typeof siteContent.links
+
+function siteLink(key: string) {
+  if (!(key in siteContent.links)) {
+    throw new Error(`Unknown site link: ${key}`)
+  }
+
+  return siteContent.links[key as SiteLinkKey]
+}
 
 function heroMediaUrl(path: string) {
   return `${path}?v=${heroMedia.version}`
@@ -317,6 +326,14 @@ onBeforeUnmount(() => {
 
       <BaseContainer class="content-view__hero-content">
         <div class="content-view__hero-copy">
+          <BaseText
+            as="p"
+            size="caption"
+            tone="subtle"
+            class="content-view__hero-eyebrow"
+          >
+            {{ pageContent.hero.eyebrow }}
+          </BaseText>
           <BaseHeading
             id="hero-title"
             as="h1"
@@ -328,10 +345,121 @@ onBeforeUnmount(() => {
           <BaseText class="content-view__hero-lede" tone="muted">
             {{ pageContent.hero.lede }}
           </BaseText>
-          <BaseActionLink :href="siteContent.links.stack" variant="primary">
+          <BaseActionLink :href="siteContent.links.problem" variant="primary">
             {{ siteContent.actions.explore }}
           </BaseActionLink>
         </div>
+      </BaseContainer>
+    </section>
+
+    <section
+      id="problem"
+      class="content-view__problem"
+      aria-labelledby="problem-title"
+      data-chrome-theme="light"
+    >
+      <BaseContainer class="content-view__problem-inner">
+        <header class="content-view__problem-intro">
+          <div class="content-view__problem-heading">
+            <BaseText
+              as="p"
+              size="caption"
+              tone="subtle"
+              class="content-view__problem-eyebrow"
+            >
+              {{ pageContent.problem.eyebrow }}
+            </BaseText>
+            <BaseHeading
+              id="problem-title"
+              as="h2"
+              size="h1"
+              class="content-view__problem-title"
+            >
+              {{ pageContent.problem.title }}
+            </BaseHeading>
+          </div>
+          <BaseText tone="muted" class="content-view__problem-lede">
+            {{ pageContent.problem.lede }}
+          </BaseText>
+        </header>
+
+        <BaseText
+          as="p"
+          size="caption"
+          tone="subtle"
+          class="content-view__problem-axis"
+        >
+          {{ pageContent.problem.axis }}
+        </BaseText>
+
+        <ul class="content-view__problem-list">
+          <li
+            v-for="item in pageContent.problem.items"
+            :key="item.title"
+            class="content-view__problem-item"
+          >
+            <span class="content-view__problem-scope">{{ item.scope }}</span>
+            <BaseHeading as="h3" size="h2" class="content-view__problem-item-title">
+              {{ item.title }}
+            </BaseHeading>
+            <BaseText tone="muted" class="content-view__problem-item-body">
+              {{ item.body }}
+            </BaseText>
+          </li>
+        </ul>
+      </BaseContainer>
+    </section>
+
+    <section
+      id="idea"
+      class="content-view__idea"
+      aria-labelledby="idea-title"
+      data-chrome-theme="light"
+    >
+      <BaseContainer class="content-view__idea-inner">
+        <header class="content-view__idea-intro">
+          <div class="content-view__idea-heading">
+            <BaseText
+              as="p"
+              size="caption"
+              tone="subtle"
+              class="content-view__idea-eyebrow"
+            >
+              {{ pageContent.idea.eyebrow }}
+            </BaseText>
+            <BaseHeading
+              id="idea-title"
+              as="h2"
+              size="h1"
+              class="content-view__idea-title"
+            >
+              {{ pageContent.idea.title }}
+            </BaseHeading>
+          </div>
+          <BaseText tone="muted" class="content-view__idea-lede">
+            {{ pageContent.idea.lede }}
+          </BaseText>
+        </header>
+
+        <ol class="content-view__idea-steps">
+          <li
+            v-for="step in pageContent.idea.steps"
+            :key="step.index"
+            class="content-view__idea-step"
+          >
+            <span class="content-view__idea-index" aria-hidden="true">{{ step.index }}</span>
+            <BaseHeading as="h3" size="h3" class="content-view__idea-step-title">
+              {{ step.title }}
+            </BaseHeading>
+            <BaseText tone="muted" class="content-view__idea-step-body">
+              {{ step.body }}
+            </BaseText>
+          </li>
+        </ol>
+
+        <p class="content-view__idea-principle">
+          {{ pageContent.idea.principle }}
+        </p>
       </BaseContainer>
     </section>
 
@@ -349,7 +477,7 @@ onBeforeUnmount(() => {
             tone="subtle"
             class="content-view__composition-eyebrow"
           >
-            {{ pageContent.composition.eyebrow }}
+            {{ pageContent.components.eyebrow }}
           </BaseText>
           <BaseHeading
             id="stack-title"
@@ -357,23 +485,23 @@ onBeforeUnmount(() => {
             size="h1"
             class="content-view__composition-title"
           >
-            {{ pageContent.composition.title }}
+            {{ pageContent.components.title }}
           </BaseHeading>
           <BaseText tone="muted" class="content-view__composition-lede">
-            {{ pageContent.composition.lede }}
+            {{ pageContent.components.lede }}
           </BaseText>
         </header>
 
-        <ol class="content-view__composition-levels">
+        <ul class="content-view__composition-levels">
           <li
-            v-for="level in pageContent.composition.levels"
-            :key="level.index"
-            class="content-view__composition-level"
+            v-for="level in pageContent.components.levels"
+            :key="level.product"
+            :class="[
+              'content-view__composition-level',
+              'content-view__composition-level--' + level.tone,
+            ]"
           >
             <div class="content-view__composition-meta">
-              <span class="content-view__composition-index" aria-hidden="true">
-                {{ level.index }}
-              </span>
               <span class="content-view__composition-scope">{{ level.scope }}</span>
             </div>
             <div class="content-view__composition-copy">
@@ -388,9 +516,14 @@ onBeforeUnmount(() => {
               <BaseText tone="muted" class="content-view__composition-level-body">
                 {{ level.body }}
               </BaseText>
+              <ul class="content-view__composition-capabilities">
+                <li v-for="capability in level.capabilities" :key="capability">
+                  {{ capability }}
+                </li>
+              </ul>
               <a
                 class="content-view__composition-link"
-                :href="level.href"
+                :href="siteLink(level.link)"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -398,7 +531,67 @@ onBeforeUnmount(() => {
               </a>
             </div>
           </li>
-        </ol>
+        </ul>
+      </BaseContainer>
+    </section>
+
+    <section
+      id="use-cases"
+      class="content-view__use-cases"
+      aria-labelledby="use-cases-title"
+      data-chrome-theme="light"
+    >
+      <BaseContainer class="content-view__use-cases-inner">
+        <header class="content-view__use-cases-intro">
+          <div class="content-view__use-cases-heading">
+            <BaseText
+              as="p"
+              size="caption"
+              tone="subtle"
+              class="content-view__use-cases-eyebrow"
+            >
+              {{ pageContent.useCases.eyebrow }}
+            </BaseText>
+            <BaseHeading
+              id="use-cases-title"
+              as="h2"
+              size="h1"
+              class="content-view__use-cases-title"
+            >
+              {{ pageContent.useCases.title }}
+            </BaseHeading>
+          </div>
+          <BaseText tone="muted" class="content-view__use-cases-lede">
+            {{ pageContent.useCases.lede }}
+          </BaseText>
+        </header>
+
+        <ul class="content-view__use-case-list">
+          <li
+            v-for="item in pageContent.useCases.items"
+            :key="item.title"
+            :class="[
+              'content-view__use-case',
+              'content-view__use-case--' + item.tone,
+            ]"
+          >
+            <span class="content-view__use-case-product">{{ item.product }}</span>
+            <BaseHeading as="h3" size="h2" class="content-view__use-case-title">
+              {{ item.title }}
+            </BaseHeading>
+            <BaseText tone="muted" class="content-view__use-case-body">
+              {{ item.body }}
+            </BaseText>
+            <a
+              class="content-view__use-case-link"
+              :href="siteLink(item.link)"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {{ item.action }}
+            </a>
+          </li>
+        </ul>
       </BaseContainer>
     </section>
 
@@ -459,7 +652,7 @@ onBeforeUnmount(() => {
               tabindex="0"
             ><code><span
               v-for="(line, index) in pageContent.proof.manifest.lines"
-              :key="`${index}-${line}`"
+              :key="index"
               class="content-view__proof-code-line"
             >{{ line || ' ' }}</span></code></pre>
           </article>
@@ -498,7 +691,7 @@ onBeforeUnmount(() => {
               :key="line.text"
               :class="[
                 'content-view__proof-code-line',
-                `content-view__proof-code-line--${line.tone}`,
+                'content-view__proof-code-line--' + line.tone,
               ]"
             >{{ line.text }}</span></code></pre>
           </article>
@@ -523,8 +716,8 @@ onBeforeUnmount(() => {
             <div class="content-view__proof-action-list">
               <BaseActionLink
                 v-for="(action, index) in pageContent.proof.actions"
-                :key="action.href"
-                :href="action.href"
+                :key="action.link"
+                :href="siteLink(action.link)"
                 :variant="index === 0 ? 'primary' : 'secondary'"
                 external
               >
@@ -537,272 +730,129 @@ onBeforeUnmount(() => {
     </section>
 
     <section
-      id="model"
-      class="content-view__model"
-      aria-labelledby="model-title"
+      id="fit"
+      class="content-view__fit"
+      aria-labelledby="fit-title"
       data-chrome-theme="light"
     >
-      <BaseContainer class="content-view__model-inner">
-        <header class="content-view__model-intro">
+      <BaseContainer class="content-view__fit-inner">
+        <header class="content-view__fit-intro">
           <BaseText
             as="p"
             size="caption"
             tone="subtle"
-            class="content-view__model-eyebrow"
+            class="content-view__fit-eyebrow"
           >
-            {{ pageContent.model.eyebrow }}
+            {{ pageContent.fit.eyebrow }}
           </BaseText>
           <BaseHeading
-            id="model-title"
+            id="fit-title"
             as="h2"
             size="h1"
-            class="content-view__model-title"
+            class="content-view__fit-title"
           >
-            {{ pageContent.model.title }}
+            {{ pageContent.fit.title }}
           </BaseHeading>
-          <BaseText tone="muted" class="content-view__model-lede">
-            {{ pageContent.model.lede }}
+          <BaseText tone="muted" class="content-view__fit-lede">
+            {{ pageContent.fit.lede }}
           </BaseText>
         </header>
 
-        <figure class="content-view__model-map">
-          <div class="content-view__model-diagram">
-            <p class="content-view__model-signal content-view__model-signal--desired">
-              <span class="content-view__model-signal-copy">
-                <strong>{{ pageContent.model.signals.desired }}</strong>
-                <span>{{ pageContent.model.signals.desiredDetail }}</span>
-                <span class="u-visually-hidden">
-                  {{ pageContent.model.signals.desiredDirection }}
-                </span>
-              </span>
-              <span class="content-view__model-signal-line" aria-hidden="true"></span>
-            </p>
-
-            <ol class="content-view__model-stages">
-              <li class="content-view__model-stage content-view__model-stage--system">
-                <header class="content-view__model-stage-copy">
-                  <p class="content-view__model-stage-meta">
-                    {{ pageContent.model.boundaries.system.scope }}
-                  </p>
-                  <div class="content-view__model-stage-context">
-                    <BaseText
-                      as="p"
-                      size="small"
-                      tone="subtle"
-                      class="content-view__model-stage-product"
-                    >
-                      {{ pageContent.model.boundaries.system.product }}
-                    </BaseText>
-                    <span class="content-view__model-stage-adoption">
-                      {{ pageContent.model.boundaries.system.adoption }}
-                    </span>
-                  </div>
-                  <BaseHeading
-                    id="model-system-title"
-                    as="h3"
-                    size="h2"
-                    class="content-view__model-stage-title"
-                  >
-                    {{ pageContent.model.boundaries.system.title }}
-                  </BaseHeading>
-                </header>
-                <ul class="content-view__model-responsibilities">
-                  <li
-                    v-for="item in pageContent.model.boundaries.system.responsibilities"
-                    :key="item"
-                  >
-                    {{ item }}
-                  </li>
-                </ul>
-              </li>
-
-              <li class="content-view__model-stage content-view__model-stage--agent">
-                <header class="content-view__model-stage-copy">
-                  <p class="content-view__model-stage-meta">
-                    {{ pageContent.model.boundaries.agent.scope }}
-                  </p>
-                  <div class="content-view__model-stage-context">
-                    <BaseText
-                      as="p"
-                      size="small"
-                      tone="subtle"
-                      class="content-view__model-stage-product"
-                    >
-                      {{ pageContent.model.boundaries.agent.product }}
-                    </BaseText>
-                    <span class="content-view__model-stage-adoption">
-                      {{ pageContent.model.boundaries.agent.adoption }}
-                    </span>
-                  </div>
-                  <BaseHeading
-                    id="model-agent-title"
-                    as="h3"
-                    size="h2"
-                    class="content-view__model-stage-title"
-                  >
-                    {{ pageContent.model.boundaries.agent.title }}
-                  </BaseHeading>
-                </header>
-                <ul class="content-view__model-responsibilities">
-                  <li
-                    v-for="item in pageContent.model.boundaries.agent.responsibilities"
-                    :key="item"
-                  >
-                    {{ item }}
-                  </li>
-                </ul>
-              </li>
-
-              <li class="content-view__model-stage content-view__model-stage--process">
-                <header class="content-view__model-stage-copy">
-                  <p class="content-view__model-stage-meta">
-                    {{ pageContent.model.boundaries.process.scope }}
-                  </p>
-                  <div class="content-view__model-stage-context">
-                    <BaseText
-                      as="p"
-                      size="small"
-                      tone="subtle"
-                      class="content-view__model-stage-product"
-                    >
-                      {{ pageContent.model.boundaries.process.product }}
-                    </BaseText>
-                    <span class="content-view__model-stage-adoption">
-                      {{ pageContent.model.boundaries.process.adoption }}
-                    </span>
-                  </div>
-                  <BaseHeading
-                    id="model-process-title"
-                    as="h3"
-                    size="h2"
-                    class="content-view__model-stage-title"
-                  >
-                    {{ pageContent.model.boundaries.process.title }}
-                  </BaseHeading>
-                </header>
-                <ul class="content-view__model-responsibilities">
-                  <li
-                    v-for="item in pageContent.model.boundaries.process.responsibilities"
-                    :key="item"
-                  >
-                    {{ item }}
-                  </li>
-                </ul>
-              </li>
-
-              <li class="content-view__model-stage content-view__model-stage--workload">
-                <header class="content-view__model-stage-copy">
-                  <p class="content-view__model-stage-meta">
-                    {{ pageContent.model.workload.scope }}
-                  </p>
-                  <BaseHeading
-                    id="model-workload-title"
-                    as="h3"
-                    size="h2"
-                    class="content-view__model-stage-title"
-                  >
-                    {{ pageContent.model.workload.title }}
-                  </BaseHeading>
-                </header>
-                <ul class="content-view__model-responsibilities">
-                  <li
-                    v-for="item in pageContent.model.workload.options"
-                    :key="item"
-                  >
-                    {{ item }}
-                  </li>
-                </ul>
-              </li>
-            </ol>
-
-            <p class="content-view__model-signal content-view__model-signal--evidence">
-              <span class="content-view__model-signal-line" aria-hidden="true"></span>
-              <span class="content-view__model-signal-copy">
-                <strong>{{ pageContent.model.signals.evidence }}</strong>
-                <span>{{ pageContent.model.signals.evidenceDetail }}</span>
-                <span class="u-visually-hidden">
-                  {{ pageContent.model.signals.evidenceDirection }}
-                </span>
-              </span>
-            </p>
-          </div>
-
-        </figure>
-
-        <div class="content-view__model-outro">
-          <aside
-            class="content-view__model-commons"
-            aria-labelledby="model-commons-title"
+        <dl class="content-view__fit-choices">
+          <div
+            v-for="(choice, index) in pageContent.fit.choices"
+            :key="choice.need"
+            :class="[
+              'content-view__fit-choice',
+              { 'content-view__fit-choice--solti': index === pageContent.fit.choices.length - 1 },
+            ]"
           >
+            <dt>{{ choice.need }}</dt>
+            <dd>{{ choice.answer }}</dd>
+          </div>
+        </dl>
+      </BaseContainer>
+    </section>
+
+    <section
+      id="community"
+      class="content-view__community"
+      :aria-label="pageContent.community.label"
+      data-chrome-theme="light"
+    >
+      <BaseContainer class="content-view__community-inner">
+        <aside
+          class="content-view__community-commons"
+          aria-labelledby="community-commons-title"
+        >
+          <BaseText
+            as="p"
+            size="caption"
+            tone="subtle"
+            class="content-view__community-commons-eyebrow"
+          >
+            {{ pageContent.community.commons.eyebrow }}
+          </BaseText>
+          <div class="content-view__community-commons-copy">
+            <BaseHeading
+              id="community-commons-title"
+              as="h2"
+              size="h3"
+              class="content-view__community-commons-title"
+            >
+              {{ pageContent.community.commons.title }}
+            </BaseHeading>
+            <BaseText tone="muted" class="content-view__community-commons-body">
+              {{ pageContent.community.commons.body }}
+            </BaseText>
+          </div>
+          <BaseActionLink
+            :href="siteContent.links.agentOverview"
+            variant="secondary"
+            external
+          >
+            {{ pageContent.community.commons.action }}
+          </BaseActionLink>
+        </aside>
+
+        <aside
+          class="content-view__community-open-source"
+          aria-labelledby="community-open-source-title"
+        >
+          <div class="content-view__community-open-source-copy">
             <BaseText
               as="p"
               size="caption"
               tone="subtle"
-              class="content-view__model-commons-eyebrow"
+              class="content-view__community-open-source-eyebrow"
             >
-              {{ pageContent.model.commons.eyebrow }}
+              {{ pageContent.community.openSource.eyebrow }}
             </BaseText>
-            <div class="content-view__model-commons-copy">
-              <BaseHeading
-                id="model-commons-title"
-                as="h3"
-                size="h3"
-                class="content-view__model-commons-title"
-              >
-                {{ pageContent.model.commons.title }}
-              </BaseHeading>
-              <BaseText tone="muted" class="content-view__model-commons-body">
-                {{ pageContent.model.commons.body }}
-              </BaseText>
-            </div>
+            <BaseHeading
+              id="community-open-source-title"
+              as="h2"
+              size="h1"
+              class="content-view__community-open-source-title"
+            >
+              {{ pageContent.community.openSource.title }}
+            </BaseHeading>
+            <BaseText tone="muted" class="content-view__community-open-source-body">
+              {{ pageContent.community.openSource.body }}
+            </BaseText>
+          </div>
+          <div class="content-view__community-open-source-actions">
+            <BaseActionLink :href="siteContent.links.github" variant="primary" external>
+              {{ pageContent.community.openSource.action }}
+            </BaseActionLink>
             <BaseActionLink
-              :href="siteContent.links.agentOverview"
+              :href="siteContent.links.contributing"
               variant="secondary"
               external
             >
-              {{ pageContent.model.commons.action }}
+              {{ pageContent.community.openSource.contributeAction }}
             </BaseActionLink>
-          </aside>
-
-          <aside
-            class="content-view__model-open-source"
-            aria-labelledby="model-open-source-title"
-          >
-            <div class="content-view__model-open-source-copy">
-              <BaseText
-                as="p"
-                size="caption"
-                tone="subtle"
-                class="content-view__model-open-source-eyebrow"
-              >
-                {{ pageContent.model.openSource.eyebrow }}
-              </BaseText>
-              <BaseHeading
-                id="model-open-source-title"
-                as="h3"
-                size="h2"
-                class="content-view__model-open-source-title"
-              >
-                {{ pageContent.model.openSource.title }}
-              </BaseHeading>
-              <BaseText tone="muted" class="content-view__model-open-source-body">
-                {{ pageContent.model.openSource.body }}
-              </BaseText>
-            </div>
-            <div class="content-view__model-open-source-actions">
-              <BaseActionLink :href="siteContent.links.github" variant="primary" external>
-                {{ pageContent.model.openSource.action }}
-              </BaseActionLink>
-              <BaseActionLink
-                :href="siteContent.links.contributing"
-                variant="secondary"
-                external
-              >
-                {{ pageContent.model.openSource.contributeAction }}
-              </BaseActionLink>
-            </div>
-          </aside>
-        </div>
+          </div>
+        </aside>
       </BaseContainer>
     </section>
   </BaseView>
