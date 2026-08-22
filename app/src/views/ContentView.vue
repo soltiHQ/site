@@ -19,8 +19,11 @@ import BaseView from '@/components/view/BaseView.vue'
 import { siteContent } from '@/contents'
 
 const heroVideo = ref<HTMLVideoElement | null>(null)
+const stackOutro = ref<HTMLElement | null>(null)
+const stackOutroVisible = ref(false)
 const pageContent = siteContent.pages.content
 const heroMedia = siteContent.media.hero
+const stackMedia = siteContent.media.stack
 type SiteLinkKey = keyof typeof siteContent.links
 
 const stackIcons = {
@@ -54,9 +57,14 @@ function heroMediaUrl(path: string) {
   return `${path}?v=${heroMedia.version}`
 }
 
+function stackMediaUrl(path: string) {
+  return `${path}?v=${stackMedia.version}`
+}
+
 const heroPosterUrl = heroMediaUrl(heroMedia.poster)
 
 let videoObserver: IntersectionObserver | undefined
+let stackObserver: IntersectionObserver | undefined
 let heroIsVisible = false
 let loadedVideoTier: 'mobile' | 'standard' | 'large' | undefined
 
@@ -102,6 +110,27 @@ function handleViewportResize() {
 
 onMounted(() => {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  const outro = stackOutro.value
+  if (outro) {
+    if (reducedMotion || !('IntersectionObserver' in window)) {
+      stackOutroVisible.value = true
+    } else {
+      stackObserver = new IntersectionObserver(
+        ([entry], observer) => {
+          if (!entry?.isIntersecting) return
+
+          stackOutroVisible.value = true
+          observer.disconnect()
+          stackObserver = undefined
+        },
+        { rootMargin: '0px 0px -12% 0px', threshold: 0.18 },
+      )
+
+      stackObserver.observe(outro)
+    }
+  }
+
   if (reducedMotion) {
     return
   }
@@ -136,6 +165,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   videoObserver?.disconnect()
+  stackObserver?.disconnect()
   document.removeEventListener('visibilitychange', updateHeroVideo)
   window.removeEventListener('resize', handleViewportResize)
 })
@@ -226,7 +256,11 @@ onBeforeUnmount(() => {
             <span>{{ pageContent.hero.lede }}</span>
             <span>{{ pageContent.hero.ledeEmphasis }}</span>
           </BaseText>
-          <BaseActionLink :href="siteContent.links.stack" variant="primary">
+          <BaseActionLink
+            :href="siteContent.links.github"
+            variant="primary"
+            external
+          >
             {{ siteContent.actions.explore }}
           </BaseActionLink>
         </div>
@@ -299,9 +333,26 @@ onBeforeUnmount(() => {
             </BaseText>
           </li>
         </ul>
-        <p class="content-view__stack-principle">
-          {{ pageContent.stack.principle }}
-        </p>
+        <div
+          ref="stackOutro"
+          class="content-view__stack-outro"
+          :class="{ 'content-view__stack-outro--visible': stackOutroVisible }"
+        >
+          <p class="content-view__stack-principle">
+            {{ pageContent.stack.principle }}
+          </p>
+          <div class="content-view__stack-artwork" aria-hidden="true">
+            <img
+              class="content-view__stack-artwork-image"
+              :src="stackMediaUrl(stackMedia.hands)"
+              alt=""
+              width="1200"
+              height="800"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        </div>
       </BaseContainer>
     </section>
 
@@ -418,7 +469,7 @@ onBeforeUnmount(() => {
               <BaseText tone="muted" class="content-view__composition-level-body">
                 {{ level.body }}
               </BaseText>
-              <ul class="content-view__composition-capabilities" tabindex="0">
+              <ul class="content-view__composition-capabilities">
                 <li v-for="capability in level.capabilities" :key="capability">
                   {{ capability }}
                 </li>

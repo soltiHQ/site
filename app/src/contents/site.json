@@ -4,7 +4,7 @@
     "title": "Solti — Open-source task execution stack",
     "description": "Build task-execution systems from composable open-source components for supervision, reconciliation, workload routing, agent APIs, discovery, and operations.",
     "image": "https://solti.io/social/solti-preview.png",
-    "imageAlt": "Solti wordmark above a conductor coordinating three task-execution layers"
+    "imageAlt": "Solti task execution stack with an engraved conductor and three flowing execution layers"
   },
   "brand": {
     "name": "Solti",
@@ -33,7 +33,7 @@
   "actions": {
     "source": "Source ↗",
     "top": "Top ↑",
-    "explore": "Explore the stack ↓"
+    "explore": "Explore the stack ↗"
   },
   "media": {
     "hero": {
@@ -54,6 +54,10 @@
           "mp4": "/media/hero-conductor-static-shadow-000-mobile.mp4"
         }
       }
+    },
+    "stack": {
+      "version": "20260822c",
+      "hands": "/media/stack-hands-baton.webp"
     }
   },
   "pages": {

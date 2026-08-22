@@ -324,16 +324,60 @@
     line-height: 1.6;
   }
 
-  .content-view__stack-principle {
-    max-width: 28ch;
+  .content-view__stack-outro {
     grid-area: principle;
     margin: clamp(var(--sp-5), 3vw, var(--sp-7)) 0 0;
+  }
+
+  .content-view__stack-principle {
+    max-width: 36ch;
+    margin: 0;
     color: var(--color-text);
     font-family: var(--font-serif);
     font-size: clamp(1.75rem, 2.8vw, 3rem);
     font-weight: var(--font-weight-medium);
     letter-spacing: -0.025em;
     line-height: 1.1;
+  }
+
+  .content-view__stack-artwork {
+    display: none;
+  }
+
+  @media (min-width: 75rem) {
+    .content-view__stack-outro {
+      display: grid;
+      align-items: center;
+      grid-template-columns: minmax(0, 1.12fr) minmax(22rem, 0.88fr);
+      gap: clamp(2.5rem, 4vw, 5rem);
+    }
+
+    .content-view__stack-artwork {
+      display: block;
+      width: min(38vw, 43rem);
+      aspect-ratio: 3 / 2;
+      justify-self: end;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(0.75rem) scale(0.985);
+      transition:
+        opacity 720ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 720ms cubic-bezier(0.22, 1, 0.36, 1);
+      -webkit-mask-image: linear-gradient(to bottom, #000 0 78%, transparent 100%);
+      mask-image: linear-gradient(to bottom, #000 0 78%, transparent 100%);
+    }
+
+    .content-view__stack-outro--visible .content-view__stack-artwork {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .content-view__stack-artwork-image {
+      display: block;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+    }
   }
 
   .content-view__composition-eyebrow,
@@ -490,25 +534,19 @@
   }
 
   .content-view__composition-capabilities {
-    display: flex;
+    display: grid;
     min-width: 0;
-    flex-wrap: nowrap;
-    gap: var(--sp-5);
+    gap: var(--sp-2);
     padding: var(--sp-3) 0 var(--sp-2);
     margin: 0;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--level-color) transparent;
     list-style: none;
   }
 
   .content-view__composition-capabilities li {
     display: flex;
-    flex: 0 0 auto;
     align-items: flex-start;
     gap: var(--sp-3);
-    white-space: nowrap;
+    white-space: normal;
     color: var(--color-text-muted);
     font-family: var(--font-mono);
     font-size: var(--font-size-caption);
@@ -1277,16 +1315,6 @@
 
     .content-view__stack-list {
       grid-template-columns: minmax(0, 1fr);
-    }
-
-    .content-view__composition-capabilities {
-      display: grid;
-      gap: var(--sp-2);
-      overflow: visible;
-    }
-
-    .content-view__composition-capabilities li {
-      white-space: normal;
     }
 
     .content-view__composition-level {
