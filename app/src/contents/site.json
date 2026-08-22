@@ -1,7 +1,7 @@
 {
   "meta": {
-    "title": "Solti — Controlled task execution for Rust systems",
-    "description": "Open-source control layers for application-owned task execution. Supervise Tokio work, build task-execution agents, or coordinate desired work across agents."
+    "title": "Solti — Open-source task execution stack",
+    "description": "Build task-execution systems from composable open-source components for supervision, reconciliation, workload routing, agent APIs, discovery, and operations."
   },
   "brand": {
     "name": "Solti",
@@ -15,11 +15,12 @@
     "taskvisorTenantSync": "https://github.com/soltiHQ/taskvisor/blob/main/examples/tenant_sync.rs",
     "sdkQuickStart": "https://github.com/soltiHQ/sdk#quick-start",
     "sdkHttpAgent": "https://github.com/soltiHQ/sdk/blob/main/crates/solti/examples/agent_http.rs",
+    "sdkContainerdExample": "https://github.com/soltiHQ/sdk/blob/main/crates/solti/examples/task_containerd.rs",
     "sdkTaskExample": "https://github.com/soltiHQ/sdk/blob/main/crates/solti/examples/task_subprocess.rs",
     "sdkTaskContract": "https://github.com/soltiHQ/sdk/blob/main/crates/solti-api/CONTRACT.md",
-    "podiumReconciler": "https://github.com/soltiHQ/podium/blob/main/internal/service/spec/service.go",
+    "podium": "https://github.com/soltiHQ/podium",
     "mainContent": "#main-content",
-    "problem": "#problem"
+    "stack": "#stack"
   },
   "accessibility": {
     "skipToContent": "Skip to content",
@@ -30,7 +31,7 @@
   "actions": {
     "source": "Source ↗",
     "top": "Top ↑",
-    "explore": "See where Solti fits ↓"
+    "quickStart": "Quick start ↗"
   },
   "media": {
     "hero": {
@@ -56,9 +57,9 @@
   "pages": {
     "content": {
       "hero": {
-        "eyebrow": "Open source · Application-owned task execution",
-        "title": "Compose systems.",
-        "lede": "Control what runs, what replaces it, and what happens next.",
+        "title": "Task execution stack.",
+        "lede": "Starting work is easy, controlling its lifecycle is not.",
+        "ledeEmphasis": "Solti makes it composable.",
         "loading": "Loading Solti",
         "labels": {
           "podium": "Podium",
@@ -66,68 +67,63 @@
           "taskvisor": "Taskvisor"
         }
       },
-      "problem": {
-      "eyebrow": "The problem",
-      "title": "Execution needs an owner.",
-      "lede": "A task starts as code. Then retries, cancellation, replacement, status, output, shutdown, and rollout state accumulate around it. Without an explicit boundary, control logic scatters across the application.",
-      "axis": "As the control boundary widens",
-      "items": [
+      "stack": {
+        "eyebrow": "The Solti stack",
+        "title": "The stack you stop wiring.",
+        "lede": "Solti is an open-source stack for building task-execution systems. Compose Taskvisor and the SDK into the binary your product needs. Add Podium when desired work must be coordinated across agents.",
+        "axis": "What Solti provides",
+        "items": [
           {
-        "scope": "Inside one process",
-            "title": "New work collides with work already running.",
-            "body": "The system must decide what waits, what is replaced, and when cleanup is complete."
+            "scope": "Resource contract",
+            "body": "Versioned Task resources with metadata, desired state, observed status, and watches."
           },
           {
-        "scope": "At an agent boundary",
-            "title": "Each operation grows another control endpoint.",
-            "body": "Submission, status, output, cancellation, and shutdown need one consistent contract."
+            "scope": "Workload routing",
+            "body": "Select a runner by workload kind and optional labels."
           },
           {
-        "scope": "Across agents",
-            "title": "Desired changes become endpoint-by-endpoint work.",
-            "body": "Target selection, install, update, removal, and per-agent rollout state need coordination."
-          }
-        ]
-      },
-      "idea": {
-        "eyebrow": "The Solti idea",
-        "title": "Declare the work. Keep control of execution.",
-        "lede": "Solti separates desired work, controlled execution, and runtime evidence. Your application keeps the workload; each product owns one control boundary around it.",
-        "steps": [
-          {
-            "index": "01",
-            "title": "Desired work",
-            "body": "Express intent as an application-owned unit of work or a versioned Task."
+            "scope": "Reconciliation",
+            "body": "Commit desired state first, then converge asynchronously on the latest generation."
           },
           {
-            "index": "02",
-            "title": "Controlled execution",
-            "body": "Apply lifecycle, routing, or rollout policy at the boundary that needs it."
+            "scope": "Attempt lifecycle",
+            "body": "Apply retries, backoff, timeouts, cancellation, replacement, and shutdown policy."
           },
           {
-            "index": "03",
-            "title": "Runtime evidence",
-            "body": "Return final outcomes and observed state to the code or system that declared the work."
+            "scope": "Execution",
+            "body": "Run subprocesses, native containerd 2.x on Linux, conditional chains, or application-owned workloads."
+          },
+          {
+            "scope": "Agent APIs",
+            "body": "Expose the same Task operations through HTTP/JSON or gRPC."
+          },
+          {
+            "scope": "Discovery",
+            "body": "Register agent identity, endpoints, API versions, and runner capabilities."
+          },
+          {
+            "scope": "Operations",
+            "body": "Add TLS, structured logging, Prometheus metrics, and live output."
           }
         ],
-        "principle": "Choose the boundary the system actually needs. Do not adopt the rest by default."
+        "principle": "Take one component or compose the stack. Your product keeps ownership of its workloads, configuration, deployment, and final security boundary."
       },
       "components": {
-        "eyebrow": "Choose your boundary",
-        "title": "One idea. Three explicit boundaries.",
-        "lede": "Taskvisor owns the in-process lifecycle. SDK builds an agent boundary. Podium coordinates compatible agent endpoints. Each can be adopted at its own boundary.",
+        "eyebrow": "Three independent components",
+        "title": "Start at the boundary you own.",
+        "lede": "Taskvisor, SDK, and Podium are independently useful. Compose them when the system crosses another execution boundary.",
         "levels": [
           {
             "tone": "taskvisor",
             "scope": "Inside one Rust process",
             "product": "Taskvisor",
-            "title": "Own the lifecycle around Tokio work.",
-            "body": "Turn async work into a managed lifecycle with retry policy, attempt timeouts, cooperative cancellation, joined shutdown, and direct final outcomes for watched work. Optionally queue, replace, or reject competing work by application key.",
+            "title": "Supervise asynchronous work.",
+            "body": "Own retries, backoff, attempt timeouts, cooperative cancellation, joined shutdown, and direct final outcomes. Queue, replace, or reject competing work by application key.",
             "capabilities": [
-              "Retries and backoff",
-              "Timeouts and cancellation",
-              "Graceful shutdown and watched outcomes",
-              "Keyed concurrency control"
+              "Retries and Backoff",
+              "Timeouts and Cancellation",
+              "Graceful Shutdown and Outcomes",
+              "Queue, Replace, or Reject by Key"
             ],
             "action": "Start with Taskvisor ↗",
             "link": "taskvisorQuickStart"
@@ -136,71 +132,79 @@
             "tone": "sdk",
             "scope": "At an agent boundary",
             "product": "SDK",
-            "title": "Turn a Rust binary into a task-execution agent.",
-            "body": "Accept versioned Tasks, reconcile the latest intent, route each workload to subprocess, native containerd 2.x on Linux, or an application-owned runner, and expose observed state through HTTP or gRPC.",
+            "title": "Build a task-execution agent.",
+            "body": "Accept versioned Tasks, reconcile the latest generation, route each workload to subprocess, native containerd 2.x on Linux, or an application-owned runner, and report observed state through HTTP or gRPC.",
             "capabilities": [
-              "Versioned Task resources",
-              "GVK and label routing",
-              "Latest-wins reconciliation",
-              "Application-owned runners",
+              "Versioned Task Resources",
+              "GVK and Label Routing",
+              "Latest-Wins Reconciliation",
+              "Custom Runners and Conditional Chains",
               "HTTP and gRPC APIs",
-              "TLS, discovery, and Prometheus"
+              "TLS, Discovery, and Prometheus"
             ],
             "action": "Build an agent ↗",
             "link": "sdkQuickStart"
           },
           {
             "tone": "podium",
-            "scope": "Across several agents",
+            "scope": "Across compatible agents",
             "product": "Podium",
-            "title": "Stop operating agents one at a time.",
-            "body": "Define a task once. Podium reconciles installs, updates, and removals across selected compatible agents, with rollout state for every target. Agents remain responsible for execution.",
+            "title": "Coordinate desired work.",
+            "body": "Run a control-plane service that persists desired specifications and per-agent rollout state, discovers compatible agents, and reconciles install, update, or removal across selected targets.",
             "capabilities": [
-              "Agent discovery",
-              "Desired task specifications",
-              "Per-agent rollout state",
-              "Versioned HTTP and gRPC boundary"
+              "Raft-Backed Control State",
+              "Desired Task Specifications",
+              "Agent Discovery and Targeting",
+              "Per-Agent Rollout Reconciliation"
             ],
             "action": "Inspect the rollout reconciler ↗",
-            "link": "podiumReconciler"
+            "link": "podium"
           }
         ]
       },
       "useCases": {
-        "eyebrow": "Concrete use cases",
-        "title": "See each boundary in real work.",
-        "lede": "Each component addresses a different control boundary. Start with the one that matches the problem you have now.",
+        "eyebrow": "What you can build",
+        "title": "One stack. Different systems.",
+        "lede": "Solti provides execution boundaries, not one finished product. Start with the form that matches the system you are building.",
         "items": [
           {
-            "tone": "taskvisor",
-            "product": "Taskvisor",
-            "title": "New work arrives before cleanup finishes.",
-            "body": "Run different tenant syncs independently. For the same tenant, cancel the active revision, replace the waiting candidate when a newer revision arrives, and start only after cleanup.",
-            "action": "See the tenant sync example ↗",
-            "link": "taskvisorTenantSync"
+            "tone": "stack",
+            "product": "A supervised Rust service",
+            "title": "Own background work inside one process.",
+            "body": "Give asynchronous operations explicit retry, timeout, cancellation, conflict, shutdown, and outcome policy without introducing an agent API or external control plane.",
+            "action": "Start with Taskvisor ↗",
+            "link": "taskvisorQuickStart"
           },
           {
-            "tone": "sdk",
-            "product": "SDK",
-            "title": "A daemon needs one Task API.",
-            "body": "Accept versioned subprocess Tasks through HTTP instead of inventing a new endpoint for every operation. Keep supervision, Task state, and shutdown behind the same agent boundary.",
-            "action": "See the HTTP agent ↗",
+            "tone": "stack",
+            "product": "A versioned workload agent",
+            "title": "Turn one binary into an execution boundary.",
+            "body": "Accept Tasks through HTTP or gRPC, route by workload kind, reconcile the latest desired state, and expose status, live output, and bounded history.",
+            "action": "Build the HTTP agent ↗",
             "link": "sdkHttpAgent"
           },
           {
-            "tone": "podium",
-            "product": "Podium",
-            "title": "One desired task must reach several agents.",
-            "body": "Select compatible agents once. Reconcile install, update, or removal per target, and inspect rollout state instead of driving every endpoint by hand.",
+            "tone": "stack",
+            "product": "A host workload controller",
+            "title": "Keep processes and containers running without a cluster.",
+            "body": "Build an agent for subprocesses or native containerd 2.x workloads on one Linux host without taking on cluster scheduling, networking, or storage orchestration.",
+            "action": "Run the containerd example ↗",
+            "link": "sdkContainerdExample"
+          },
+          {
+            "tone": "stack",
+            "product": "A control plane across agents",
+            "title": "Coordinate desired work across selected hosts.",
+            "body": "Persist specifications and per-agent rollout state, discover compatible agents, and reconcile install, update, or removal instead of operating every endpoint by hand.",
             "action": "Inspect rollout reconciliation ↗",
-            "link": "podiumReconciler"
+            "link": "podium"
           }
         ]
       },
       "proof": {
-        "eyebrow": "See the contract work",
+        "eyebrow": "See it run",
         "title": "Desired work in. Runtime evidence out.",
-        "lede": "The SDK subprocess example is deliberately ordinary. That is the point: define what should run once, then let the agent own routing, supervision, status, output, and shutdown.",
+        "lede": "This runnable SDK example commits a versioned Task, routes its subprocess workload, supervises the attempt, and exposes reconciliation, live output, terminal state, and run history.",
         "manifest": {
           "index": "01",
           "label": "Desired Task",
@@ -270,7 +274,7 @@
           }
         ],
         "transition": "create_task",
-        "note": "Core state and live output are process-local.",
+        "note": "Core state and live output are process-local. Add an application-owned store or control plane when state must survive the agent process.",
         "actions": [
           {
             "label": "See the complete example ↗",
@@ -284,24 +288,24 @@
       },
       "fit": {
         "eyebrow": "Know the boundary",
-        "title": "You may need something smaller.",
-        "lede": "Solti is useful when execution itself needs policy, observed state, or an API another system can drive. It is not the answer to every background task.",
+        "title": "Use the smallest thing that fits.",
+        "lede": "Solti provides components for building the system. Your product defines the final host, agent, or control plane.",
         "choices": [
           {
             "need": "One retried future or a fixed worker set",
             "answer": "Tokio primitives and a focused retry helper may be enough."
           },
           {
-            "need": "Work that must survive process restarts",
-            "answer": "Use a durable job system."
+            "need": "Conditional multi-step execution",
+            "answer": "Solti Chain runs an acyclic sequence with success and failure branches inside one Task attempt. It does not persist step progress or resume after a process crash."
           },
           {
-            "need": "Cluster-wide placement and resource scheduling",
-            "answer": "Use a workload scheduler."
+            "need": "Host or fleet workload control",
+            "answer": "Build it with Solti when your application selects the target agents. Use Kubernetes or Nomad when you need built-in resource placement, bin packing, networking, or storage orchestration."
           },
           {
-            "need": "Application-owned execution with explicit control boundaries",
-            "answer": "That is the Solti problem."
+            "need": "Application-owned execution across one process, host, or selected agents",
+            "answer": "Build it with Solti."
           }
         ]
       },
@@ -310,7 +314,7 @@
         "commons": {
           "eyebrow": "Operational commons",
           "title": "See the runtime as a system.",
-          "body": "Agent Overview is an Apache-2.0 Grafana dashboard for fleet health, task state, lifecycle, API, discovery, and host metrics in one operational view.",
+          "body": "Agent Overview is an Apache-2.0 Grafana dashboard for task state, lifecycle, API, discovery, and host metrics exposed by SDK-based agents.",
           "action": "Explore Agent Overview ↗"
         },
         "openSource": {
@@ -324,6 +328,6 @@
     }
   },
   "footer": {
-    "descriptor": "controlled task execution"
+    "descriptor": "open-source task execution stack"
   }
 }

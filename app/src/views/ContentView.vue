@@ -326,14 +326,6 @@ onBeforeUnmount(() => {
 
       <BaseContainer class="content-view__hero-content">
         <div class="content-view__hero-copy">
-          <BaseText
-            as="p"
-            size="caption"
-            tone="subtle"
-            class="content-view__hero-eyebrow"
-          >
-            {{ pageContent.hero.eyebrow }}
-          </BaseText>
           <BaseHeading
             id="hero-title"
             as="h1"
@@ -343,43 +335,44 @@ onBeforeUnmount(() => {
             {{ pageContent.hero.title }}
           </BaseHeading>
           <BaseText class="content-view__hero-lede" tone="muted">
-            {{ pageContent.hero.lede }}
+            <span>{{ pageContent.hero.lede }}</span>
+            <span>{{ pageContent.hero.ledeEmphasis }}</span>
           </BaseText>
-          <BaseActionLink :href="siteContent.links.problem" variant="primary">
-            {{ siteContent.actions.explore }}
+          <BaseActionLink :href="siteContent.links.github" variant="primary" external>
+            {{ siteContent.actions.quickStart }}
           </BaseActionLink>
         </div>
       </BaseContainer>
     </section>
 
     <section
-      id="problem"
-      class="content-view__problem"
-      aria-labelledby="problem-title"
+      id="stack"
+      class="content-view__stack"
+      aria-labelledby="stack-title"
       data-chrome-theme="light"
     >
-      <BaseContainer class="content-view__problem-inner">
-        <header class="content-view__problem-intro">
-          <div class="content-view__problem-heading">
+      <BaseContainer class="content-view__stack-inner">
+        <header class="content-view__stack-intro">
+          <div class="content-view__stack-heading">
             <BaseText
               as="p"
               size="caption"
               tone="subtle"
-              class="content-view__problem-eyebrow"
+              class="content-view__stack-eyebrow"
             >
-              {{ pageContent.problem.eyebrow }}
+              {{ pageContent.stack.eyebrow }}
             </BaseText>
             <BaseHeading
-              id="problem-title"
+              id="stack-title"
               as="h2"
               size="h1"
-              class="content-view__problem-title"
+              class="content-view__stack-title"
             >
-              {{ pageContent.problem.title }}
+              {{ pageContent.stack.title }}
             </BaseHeading>
           </div>
-          <BaseText tone="muted" class="content-view__problem-lede">
-            {{ pageContent.problem.lede }}
+          <BaseText tone="muted" class="content-view__stack-lede">
+            {{ pageContent.stack.lede }}
           </BaseText>
         </header>
 
@@ -387,151 +380,31 @@ onBeforeUnmount(() => {
           as="p"
           size="caption"
           tone="subtle"
-          class="content-view__problem-axis"
+          class="content-view__stack-axis"
         >
-          {{ pageContent.problem.axis }}
+          {{ pageContent.stack.axis }}
         </BaseText>
 
-        <ul class="content-view__problem-list">
+        <ul class="content-view__stack-list">
           <li
-            v-for="item in pageContent.problem.items"
-            :key="item.title"
-            class="content-view__problem-item"
+            v-for="(item, index) in pageContent.stack.items"
+            :key="item.scope"
+            class="content-view__stack-item"
           >
-            <span class="content-view__problem-scope">{{ item.scope }}</span>
-            <BaseHeading as="h3" size="h2" class="content-view__problem-item-title">
-              {{ item.title }}
+            <span class="content-view__stack-index" aria-hidden="true">
+              {{ String(index + 1).padStart(2, '0') }}
+            </span>
+            <BaseHeading as="h3" size="h2" class="content-view__stack-item-title">
+              {{ item.scope }}
             </BaseHeading>
-            <BaseText tone="muted" class="content-view__problem-item-body">
+            <BaseText tone="muted" class="content-view__stack-item-body">
               {{ item.body }}
             </BaseText>
           </li>
         </ul>
-      </BaseContainer>
-    </section>
-
-    <section
-      id="idea"
-      class="content-view__idea"
-      aria-labelledby="idea-title"
-      data-chrome-theme="light"
-    >
-      <BaseContainer class="content-view__idea-inner">
-        <header class="content-view__idea-intro">
-          <div class="content-view__idea-heading">
-            <BaseText
-              as="p"
-              size="caption"
-              tone="subtle"
-              class="content-view__idea-eyebrow"
-            >
-              {{ pageContent.idea.eyebrow }}
-            </BaseText>
-            <BaseHeading
-              id="idea-title"
-              as="h2"
-              size="h1"
-              class="content-view__idea-title"
-            >
-              {{ pageContent.idea.title }}
-            </BaseHeading>
-          </div>
-          <BaseText tone="muted" class="content-view__idea-lede">
-            {{ pageContent.idea.lede }}
-          </BaseText>
-        </header>
-
-        <ol class="content-view__idea-steps">
-          <li
-            v-for="step in pageContent.idea.steps"
-            :key="step.index"
-            class="content-view__idea-step"
-          >
-            <span class="content-view__idea-index" aria-hidden="true">{{ step.index }}</span>
-            <BaseHeading as="h3" size="h3" class="content-view__idea-step-title">
-              {{ step.title }}
-            </BaseHeading>
-            <BaseText tone="muted" class="content-view__idea-step-body">
-              {{ step.body }}
-            </BaseText>
-          </li>
-        </ol>
-
-        <p class="content-view__idea-principle">
-          {{ pageContent.idea.principle }}
+        <p class="content-view__stack-principle">
+          {{ pageContent.stack.principle }}
         </p>
-      </BaseContainer>
-    </section>
-
-    <section
-      id="stack"
-      class="content-view__composition"
-      aria-labelledby="stack-title"
-      data-chrome-theme="light"
-    >
-      <BaseContainer class="content-view__composition-inner">
-        <header class="content-view__composition-intro">
-          <BaseText
-            as="p"
-            size="caption"
-            tone="subtle"
-            class="content-view__composition-eyebrow"
-          >
-            {{ pageContent.components.eyebrow }}
-          </BaseText>
-          <BaseHeading
-            id="stack-title"
-            as="h2"
-            size="h1"
-            class="content-view__composition-title"
-          >
-            {{ pageContent.components.title }}
-          </BaseHeading>
-          <BaseText tone="muted" class="content-view__composition-lede">
-            {{ pageContent.components.lede }}
-          </BaseText>
-        </header>
-
-        <ul class="content-view__composition-levels">
-          <li
-            v-for="level in pageContent.components.levels"
-            :key="level.product"
-            :class="[
-              'content-view__composition-level',
-              'content-view__composition-level--' + level.tone,
-            ]"
-          >
-            <div class="content-view__composition-meta">
-              <span class="content-view__composition-scope">{{ level.scope }}</span>
-            </div>
-            <div class="content-view__composition-copy">
-              <BaseHeading
-                as="h3"
-                size="h2"
-                class="content-view__composition-product"
-              >
-                {{ level.product }}
-              </BaseHeading>
-              <span class="content-view__composition-role">{{ level.title }}</span>
-              <BaseText tone="muted" class="content-view__composition-level-body">
-                {{ level.body }}
-              </BaseText>
-              <ul class="content-view__composition-capabilities">
-                <li v-for="capability in level.capabilities" :key="capability">
-                  {{ capability }}
-                </li>
-              </ul>
-              <a
-                class="content-view__composition-link"
-                :href="siteLink(level.link)"
-                target="_blank"
-                rel="noreferrer"
-              >
-                {{ level.action }}
-              </a>
-            </div>
-          </li>
-        </ul>
       </BaseContainer>
     </section>
 
@@ -590,6 +463,78 @@ onBeforeUnmount(() => {
             >
               {{ item.action }}
             </a>
+          </li>
+        </ul>
+      </BaseContainer>
+    </section>
+
+    <section
+      id="components"
+      class="content-view__composition"
+      aria-labelledby="components-title"
+      data-chrome-theme="light"
+    >
+      <BaseContainer class="content-view__composition-inner">
+        <header class="content-view__composition-intro">
+          <BaseText
+            as="p"
+            size="caption"
+            tone="subtle"
+            class="content-view__composition-eyebrow"
+          >
+            {{ pageContent.components.eyebrow }}
+          </BaseText>
+          <BaseHeading
+            id="components-title"
+            as="h2"
+            size="h1"
+            class="content-view__composition-title"
+          >
+            {{ pageContent.components.title }}
+          </BaseHeading>
+          <BaseText tone="muted" class="content-view__composition-lede">
+            {{ pageContent.components.lede }}
+          </BaseText>
+        </header>
+
+        <ul class="content-view__composition-levels">
+          <li
+            v-for="level in pageContent.components.levels"
+            :key="level.product"
+            :class="[
+              'content-view__composition-level',
+              'content-view__composition-level--' + level.tone,
+            ]"
+          >
+            <div class="content-view__composition-meta">
+              <span class="content-view__composition-scope">{{ level.scope }}</span>
+            </div>
+            <div class="content-view__composition-copy">
+              <BaseHeading
+                as="h3"
+                size="h2"
+                class="content-view__composition-product"
+              >
+                {{ level.product }}
+              </BaseHeading>
+              <span class="content-view__composition-role">{{ level.title }}</span>
+              <BaseText tone="muted" class="content-view__composition-level-body">
+                {{ level.body }}
+              </BaseText>
+              <ul class="content-view__composition-capabilities" tabindex="0">
+                <li v-for="capability in level.capabilities" :key="capability">
+                  {{ capability }}
+                </li>
+              </ul>
+              <a
+                class="content-view__composition-link"
+                :href="siteLink(level.link)"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {{ level.action }}
+              </a>
+            </div>
           </li>
         </ul>
       </BaseContainer>
