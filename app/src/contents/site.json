@@ -33,7 +33,7 @@
   "actions": {
     "source": "Source ↗",
     "top": "Top ↑",
-    "explore": "Explore the stack ↗"
+    "explore": "Solti on GitHub ↗"
   },
   "media": {
     "hero": {
@@ -217,25 +217,25 @@
       "proof": {
         "eyebrow": "See it run",
         "title": "Desired work in. Runtime evidence out.",
-        "lede": "This runnable SDK example commits a versioned Task, routes its subprocess workload, supervises the attempt, and exposes reconciliation, live output, terminal state, and run history.",
+        "lede": "This runnable SDK example commits a versioned Task, routes its container workload to the native containerd runner, supervises one hardened attempt, and retains terminal state and run history after containerd has removed the attempt.",
         "manifest": {
           "index": "01",
           "label": "Desired Task",
-          "filename": "task_subprocess.rs",
+          "filename": "task_containerd.rs",
           "lines": [
-            "let workload = TaskWorkload::Subprocess(SubprocessSpec::new(",
-            "    SubprocessMode::Command {",
-            "        command,",
-            "        args: vec![CHILD_MODE.into(), child_address],",
-            "    },",
-            "    TaskEnv::new(),",
-            "    None,",
-            "    Flag::enabled(),",
+            "let workload = TaskWorkload::Container(ContainerSpec::new(",
+            "    image,",
+            "    Some(vec![\"/bin/sh\".into()]),",
+            "    vec![",
+            "        \"-c\".into(),",
+            "        \"test \\\"$SOLTI_EXAMPLE\\\" = umbrella-container\".into(),",
+            "    ],",
+            "    env,",
             "));",
-            "let spec = TaskSpec::builder(\"example\", workload, 30_000_u64)",
+            "let spec = TaskSpec::builder(\"containers\", workload, 120_000_u64)",
             "    .restart(RestartPolicy::Never)",
             "    .build()?;",
-            "let manifest = TaskManifest::new(\"subprocess-example\", spec)?;",
+            "let manifest = TaskManifest::new(\"container-example\", spec)?;",
             "",
             "let committed = supervisor.create_task(manifest).await?;"
           ]
@@ -243,32 +243,32 @@
         "trace": {
           "index": "02",
           "label": "Observed lifecycle",
-          "source": "task_subprocess",
-          "command": "$ cargo run -p solti --example task_subprocess --features core,exec-subprocess",
+          "source": "task_containerd",
+          "command": "$ cargo run -p solti --example task_containerd --features core,exec-containerd",
           "lines": [
             {
               "tone": "state",
-              "text": "committed subprocess-example generation 1"
-            },
-            {
-              "tone": "success",
-              "text": "Reconciled=True reason=RuntimeAccepted"
-            },
-            {
-              "tone": "stream",
-              "text": "live Stdout: child stdout"
-            },
-            {
-              "tone": "stream",
-              "text": "live Stderr: child stderr"
-            },
-            {
-              "tone": "success",
-              "text": "terminal phase=succeeded"
+              "text": "[workload] image=docker.io/library/alpine:3.21, network=None."
             },
             {
               "tone": "state",
-              "text": "run generation=1 attempt=1 phase=succeeded"
+              "text": "[probe] Connected to engine=containerd version=2.0."
+            },
+            {
+              "tone": "stream",
+              "text": "[policy] capabilities=[], noNewPrivileges=true, umask=077, seccomp=DenyHostControl."
+            },
+            {
+              "tone": "success",
+              "text": "[core] Committed task=container-example generation=1."
+            },
+            {
+              "tone": "success",
+              "text": "[result] taskPhase=succeeded, runPhase=succeeded, attempt=1."
+            },
+            {
+              "tone": "state",
+              "text": "[shutdown] Supervisor and containerd cleanup worker stopped."
             }
           ]
         },
@@ -279,19 +279,19 @@
           },
           {
             "label": "Runner",
-            "value": "Subprocess"
+            "value": "containerd 2.x"
           },
           {
-            "label": "Evidence",
-            "value": "State, output, history"
+            "label": "Isolation",
+            "value": "seccomp, caps, umask"
           }
         ],
         "transition": "create_task",
-        "note": "Core state and live output are process-local. Add an application-owned store or control plane when state must survive the agent process.",
+        "note": "This example is process-local. Podium holds desired state when it must outlive the agent. Native containerd attempts require Linux and a running daemon.",
         "actions": [
           {
             "label": "See the complete example ↗",
-            "link": "sdkTaskExample"
+            "link": "sdkContainerdExample"
           },
           {
             "label": "Read the Task API contract ↗",
