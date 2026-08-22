@@ -9,7 +9,7 @@ import {
   Route,
   TimerReset,
 } from '@lucide/vue'
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import BaseContainer from '@/components/layout/BaseContainer.vue'
 import BaseActionLink from '@/components/ui/BaseActionLink.vue'
@@ -23,6 +23,14 @@ const traceOutput = ref<HTMLElement | null>(null)
 // -1 renders the finished trace. Playback only arms itself when it can actually run, so
 // no-JS, no IntersectionObserver, and reduced motion all get the complete output instead.
 const traceRevealed = ref(-1)
+// While the trace is mid-run, the manifest line that caused it and the connector between
+// the panels both read as live, so the reader sees the cause next to the effect.
+const traceRunning = ref(false)
+// The cursor sits in the panel from the moment playback is armed, so an empty terminal
+// reads as a waiting prompt rather than as a broken panel.
+const traceAwaiting = computed(
+  () => traceRevealed.value >= 0 && traceRevealed.value < pageContent.proof.trace.lines.length,
+)
 const stackOutro = ref<HTMLElement | null>(null)
 const stackOutroVisible = ref(false)
 const pageContent = siteContent.pages.content
@@ -123,10 +131,14 @@ function playTrace() {
     traceTimeout = undefined
     traceRevealed.value += 1
     const next = lines[traceRevealed.value]
-    if (!next) return
+    if (!next) {
+      traceRunning.value = false
+      return
+    }
     traceTimeout = window.setTimeout(step, next.delay)
   }
 
+  traceRunning.value = true
   traceTimeout = window.setTimeout(step, first.delay)
 }
 
@@ -587,11 +599,17 @@ onBeforeUnmount(() => {
             ><code><span
               v-for="(line, index) in pageContent.proof.manifest.lines"
               :key="index"
-              class="content-view__proof-code-line"
+              :class="[
+                'content-view__proof-code-line',
+                { 'is-live': traceRunning && line.includes(pageContent.proof.transition) },
+              ]"
             >{{ line || ' ' }}</span></code></pre>
           </article>
 
-          <div class="content-view__proof-connector" aria-hidden="true">
+          <div
+            :class="['content-view__proof-connector', { 'is-live': traceRunning }]"
+            aria-hidden="true"
+          >
             <span>{{ pageContent.proof.transition }}</span>
           </div>
 
@@ -630,7 +648,7 @@ onBeforeUnmount(() => {
                 { 'is-pending': traceRevealed >= 0 && index >= traceRevealed },
               ]"
             >{{ line.text }}</span><span
-              v-if="traceRevealed >= 0 && traceRevealed < pageContent.proof.trace.lines.length"
+              v-if="traceAwaiting"
               class="content-view__proof-trace-cursor"
               aria-hidden="true"
             ></span></code></pre>

@@ -1,7 +1,7 @@
 {
   "meta": {
     "url": "https://solti.io/",
-    "title": "Solti — Open-source task execution stack",
+    "title": "Solti: Open-source task execution stack",
     "description": "Build task-execution systems from composable open-source components for supervision, reconciliation, workload routing, agent APIs, discovery, and operations.",
     "image": "https://solti.io/social/solti-preview.png",
     "imageAlt": "Solti task execution stack with an engraved conductor and three flowing execution layers"
