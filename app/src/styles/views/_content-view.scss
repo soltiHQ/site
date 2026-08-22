@@ -1096,6 +1096,17 @@
     gap: var(--sp-5);
     padding: var(--sp-5);
     border-bottom: var(--stroke-hair) solid var(--color-border);
+    opacity: 0;
+    transform: translateY(0.5rem);
+    transition:
+      opacity 560ms cubic-bezier(0.22, 1, 0.36, 1),
+      transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: calc(var(--reveal-index, 0) * 90ms);
+  }
+
+  .content-view__fit-choices--revealed .content-view__fit-choice {
+    opacity: 1;
+    transform: none;
   }
 
   .content-view__fit-choice dt,

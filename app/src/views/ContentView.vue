@@ -33,6 +33,8 @@ const traceAwaiting = computed(
 )
 const stackOutro = ref<HTMLElement | null>(null)
 const stackOutroVisible = ref(false)
+const fitChoices = ref<HTMLElement | null>(null)
+const fitChoicesVisible = ref(false)
 const pageContent = siteContent.pages.content
 const heroMedia = siteContent.media.hero
 const stackMedia = siteContent.media.stack
@@ -75,6 +77,7 @@ function stackMediaUrl(path: string) {
 
 const heroPosterUrl = heroMediaUrl(heroMedia.poster)
 
+let fitObserver: IntersectionObserver | undefined
 let traceObserver: IntersectionObserver | undefined
 let traceTimeout: number | undefined
 let videoObserver: IntersectionObserver | undefined
@@ -165,6 +168,26 @@ onMounted(() => {
     }
   }
 
+  const choices = fitChoices.value
+  if (choices) {
+    if (reducedMotion || !('IntersectionObserver' in window)) {
+      fitChoicesVisible.value = true
+    } else {
+      fitObserver = new IntersectionObserver(
+        ([entry], observer) => {
+          if (!entry?.isIntersecting) return
+
+          fitChoicesVisible.value = true
+          observer.disconnect()
+          fitObserver = undefined
+        },
+        { rootMargin: '0px 0px -12% 0px', threshold: 0.18 },
+      )
+
+      fitObserver.observe(choices)
+    }
+  }
+
   const trace = traceOutput.value
   if (trace && !reducedMotion && 'IntersectionObserver' in window) {
     traceRevealed.value = 0
@@ -216,6 +239,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (traceTimeout !== undefined) window.clearTimeout(traceTimeout)
+  fitObserver?.disconnect()
   traceObserver?.disconnect()
   videoObserver?.disconnect()
   stackObserver?.disconnect()
@@ -716,14 +740,19 @@ onBeforeUnmount(() => {
           </BaseText>
         </header>
 
-        <dl class="content-view__fit-choices">
+        <dl
+          ref="fitChoices"
+          class="content-view__fit-choices"
+          :class="{ 'content-view__fit-choices--revealed': fitChoicesVisible }"
+        >
           <div
-            v-for="choice in pageContent.fit.choices"
+            v-for="(choice, index) in pageContent.fit.choices"
             :key="choice.need"
             :class="[
               'content-view__fit-choice',
               { 'content-view__fit-choice--solti': choice.featured },
             ]"
+            :style="{ '--reveal-index': choice.featured ? index + 1 : index }"
           >
             <dt>{{ choice.need }}</dt>
             <dd>{{ choice.answer }}</dd>
