@@ -1,4 +1,14 @@
 <script setup lang="ts">
+import {
+  Activity,
+  FileJson2,
+  Network,
+  Play,
+  Radar,
+  RefreshCw,
+  Route,
+  TimerReset,
+} from '@lucide/vue'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import BaseContainer from '@/components/layout/BaseContainer.vue'
@@ -6,16 +16,31 @@ import BaseActionLink from '@/components/ui/BaseActionLink.vue'
 import BaseHeading from '@/components/ui/BaseHeading.vue'
 import BaseText from '@/components/ui/BaseText.vue'
 import BaseView from '@/components/view/BaseView.vue'
-import soltiLogoDarkUrl from '@/assets/logo/solti-logo-dark.svg'
 import { siteContent } from '@/contents'
 
 const heroVideo = ref<HTMLVideoElement | null>(null)
-const heroConductor = ref<HTMLImageElement | null>(null)
-const isHeroLoading = ref(true)
 const pageContent = siteContent.pages.content
 const heroMedia = siteContent.media.hero
-const HERO_LOADING_TIMEOUT_MS = 8_000
 type SiteLinkKey = keyof typeof siteContent.links
+
+const stackIcons = {
+  resource: FileJson2,
+  routing: Route,
+  reconciliation: RefreshCw,
+  lifecycle: TimerReset,
+  execution: Play,
+  api: Network,
+  discovery: Radar,
+  operations: Activity,
+} as const
+
+function stackIcon(key: string) {
+  if (!(key in stackIcons)) {
+    throw new Error(`Unknown stack icon: ${key}`)
+  }
+
+  return stackIcons[key as keyof typeof stackIcons]
+}
 
 function siteLink(key: string) {
   if (!(key in siteContent.links)) {
@@ -34,94 +59,6 @@ const heroPosterUrl = heroMediaUrl(heroMedia.poster)
 let videoObserver: IntersectionObserver | undefined
 let heroIsVisible = false
 let loadedVideoTier: 'mobile' | 'standard' | 'large' | undefined
-let videoHydrationStarted = false
-let reducedMotion = false
-let posterSettled = false
-let conductorSettled = false
-let videoSettled = false
-let heroLoadingTimeout: number | undefined
-let sourceErrorCheckTimeout: number | undefined
-let posterLoader: HTMLImageElement | undefined
-let componentUnmounted = false
-let appRoot: HTMLElement | null = null
-let appRootWasInert = false
-let pageInteractionLocked = false
-
-function lockPageInteraction() {
-  appRoot = document.getElementById('app')
-  appRootWasInert = appRoot?.hasAttribute('inert') ?? false
-  appRoot?.setAttribute('inert', '')
-  document.documentElement.classList.add('has-active-preloader')
-  pageInteractionLocked = true
-}
-
-function restorePageInteraction() {
-  if (!pageInteractionLocked) return
-  if (!appRootWasInert) appRoot?.removeAttribute('inert')
-  document.documentElement.classList.remove('has-active-preloader')
-  pageInteractionLocked = false
-  appRoot = null
-}
-
-function clearHeroLoadingResources() {
-  if (heroLoadingTimeout !== undefined) {
-    window.clearTimeout(heroLoadingTimeout)
-    heroLoadingTimeout = undefined
-  }
-
-  if (sourceErrorCheckTimeout !== undefined) {
-    window.clearTimeout(sourceErrorCheckTimeout)
-    sourceErrorCheckTimeout = undefined
-  }
-
-  if (posterLoader) {
-    posterLoader.onload = null
-    posterLoader.onerror = null
-    posterLoader = undefined
-  }
-}
-
-function finishHeroLoading() {
-  if (componentUnmounted || !isHeroLoading.value) return
-  isHeroLoading.value = false
-  clearHeroLoadingResources()
-}
-
-function updateHeroLoading() {
-  if (posterSettled && conductorSettled && (reducedMotion || videoSettled)) {
-    finishHeroLoading()
-  }
-}
-
-function settleHeroPoster() {
-  posterSettled = true
-  updateHeroLoading()
-}
-
-function settleHeroConductor() {
-  conductorSettled = true
-  updateHeroLoading()
-}
-
-function settleHeroVideo() {
-  videoSettled = true
-  updateHeroLoading()
-}
-
-function handleHeroSourceError() {
-  if (!isHeroLoading.value || !videoHydrationStarted) return
-
-  if (sourceErrorCheckTimeout !== undefined) {
-    window.clearTimeout(sourceErrorCheckTimeout)
-  }
-
-  sourceErrorCheckTimeout = window.setTimeout(() => {
-    sourceErrorCheckTimeout = undefined
-    if (heroVideo.value?.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) {
-      settleHeroVideo()
-    }
-  })
-}
 
 function getHeroVideoTier() {
   if (window.innerWidth >= 1920) return 'large'
@@ -130,7 +67,6 @@ function getHeroVideoTier() {
 }
 
 function hydrateVideo(video: HTMLVideoElement) {
-  videoHydrationStarted = true
   let changed = false
   video.querySelectorAll<HTMLSourceElement>('source[data-src]').forEach((source) => {
     if (!source.dataset.src) return
@@ -165,27 +101,18 @@ function handleViewportResize() {
 }
 
 onMounted(() => {
-  lockPageInteraction()
-  reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  heroLoadingTimeout = window.setTimeout(finishHeroLoading, HERO_LOADING_TIMEOUT_MS)
-
-  posterLoader = new Image()
-  posterLoader.onload = settleHeroPoster
-  posterLoader.onerror = settleHeroPoster
-  posterLoader.src = heroPosterUrl
-  if (posterLoader.complete) settleHeroPoster()
-
-  if (heroConductor.value?.complete) settleHeroConductor()
-
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   if (reducedMotion) {
-    updateHeroLoading()
     return
   }
 
+  const connection = (
+    navigator as Navigator & { connection?: { saveData?: boolean } }
+  ).connection
+  if (connection?.saveData) return
+
   const video = heroVideo.value
   if (!video) return
-
-  if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) settleHeroVideo()
 
   document.addEventListener('visibilitychange', updateHeroVideo)
   window.addEventListener('resize', handleViewportResize)
@@ -208,9 +135,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  componentUnmounted = true
-  clearHeroLoadingResources()
-  restorePageInteraction()
   videoObserver?.disconnect()
   document.removeEventListener('visibilitychange', updateHeroVideo)
   window.removeEventListener('resize', handleViewportResize)
@@ -218,32 +142,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="content-view-preloader" @after-leave="restorePageInteraction">
-      <div
-        v-if="isHeroLoading"
-        class="content-view__preloader"
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        <div class="content-view__preloader-mark">
-          <img
-            class="content-view__preloader-logo"
-            :src="soltiLogoDarkUrl"
-            alt=""
-            width="460"
-            height="460"
-            aria-hidden="true"
-          />
-          <span class="content-view__preloader-track" aria-hidden="true"></span>
-        </div>
-        <span class="u-visually-hidden">{{ pageContent.hero.loading }}</span>
-      </div>
-    </Transition>
-  </Teleport>
-
-  <BaseView class="content-view" :aria-busy="isHeroLoading ? 'true' : 'false'">
+  <BaseView class="content-view">
     <section
       class="content-view__hero"
       aria-labelledby="hero-title"
@@ -259,48 +158,39 @@ onBeforeUnmount(() => {
           preload="metadata"
           :poster="heroPosterUrl"
           tabindex="-1"
-          @loadeddata="settleHeroVideo"
-          @error="settleHeroVideo"
         >
           <source
             :data-src="heroMediaUrl(heroMedia.video.large.mp4)"
             type="video/mp4"
             media="(prefers-reduced-motion: no-preference) and (min-width: 1920px)"
-            @error="handleHeroSourceError"
           />
           <source
             :data-src="heroMediaUrl(heroMedia.video.large.webm)"
             type="video/webm"
             media="(prefers-reduced-motion: no-preference) and (min-width: 1920px)"
-            @error="handleHeroSourceError"
           />
           <source
             :data-src="heroMediaUrl(heroMedia.video.standard.mp4)"
             type="video/mp4"
             media="(prefers-reduced-motion: no-preference) and (min-width: 768px)"
-            @error="handleHeroSourceError"
           />
           <source
             :data-src="heroMediaUrl(heroMedia.video.standard.webm)"
             type="video/webm"
             media="(prefers-reduced-motion: no-preference) and (min-width: 768px)"
-            @error="handleHeroSourceError"
           />
           <source
             :data-src="heroMediaUrl(heroMedia.video.mobile.mp4)"
             type="video/mp4"
             media="(prefers-reduced-motion: no-preference)"
-            @error="handleHeroSourceError"
           />
           <source
             :data-src="heroMediaUrl(heroMedia.video.mobile.webm)"
             type="video/webm"
             media="(prefers-reduced-motion: no-preference)"
-            @error="handleHeroSourceError"
           />
         </video>
         <img
-          ref="heroConductor"
           class="content-view__hero-conductor"
           :src="heroMediaUrl(heroMedia.conductor)"
           alt=""
@@ -308,8 +198,6 @@ onBeforeUnmount(() => {
           height="1644"
           decoding="async"
           fetchpriority="high"
-          @load="settleHeroConductor"
-          @error="settleHeroConductor"
         />
         <div class="content-view__visual-labels content-view__visual-labels--rest">
           <span class="content-view__visual-label content-view__visual-label--podium">
@@ -338,8 +226,8 @@ onBeforeUnmount(() => {
             <span>{{ pageContent.hero.lede }}</span>
             <span>{{ pageContent.hero.ledeEmphasis }}</span>
           </BaseText>
-          <BaseActionLink :href="siteContent.links.github" variant="primary" external>
-            {{ siteContent.actions.quickStart }}
+          <BaseActionLink :href="siteContent.links.stack" variant="primary">
+            {{ siteContent.actions.explore }}
           </BaseActionLink>
         </div>
       </BaseContainer>
@@ -391,9 +279,18 @@ onBeforeUnmount(() => {
             :key="item.scope"
             class="content-view__stack-item"
           >
-            <span class="content-view__stack-index" aria-hidden="true">
-              {{ String(index + 1).padStart(2, '0') }}
-            </span>
+            <div class="content-view__stack-item-meta" aria-hidden="true">
+              <component
+                :is="stackIcon(item.icon)"
+                class="content-view__stack-icon"
+                :size="28"
+                :stroke-width="1.5"
+                :absolute-stroke-width="true"
+              />
+              <span class="content-view__stack-index">
+                {{ String(index + 1).padStart(2, '0') }}
+              </span>
+            </div>
             <BaseHeading as="h3" size="h2" class="content-view__stack-item-title">
               {{ item.scope }}
             </BaseHeading>
@@ -705,11 +602,11 @@ onBeforeUnmount(() => {
 
         <dl class="content-view__fit-choices">
           <div
-            v-for="(choice, index) in pageContent.fit.choices"
+            v-for="choice in pageContent.fit.choices"
             :key="choice.need"
             :class="[
               'content-view__fit-choice',
-              { 'content-view__fit-choice--solti': index === pageContent.fit.choices.length - 1 },
+              { 'content-view__fit-choice--solti': choice.featured },
             ]"
           >
             <dt>{{ choice.need }}</dt>
@@ -726,7 +623,7 @@ onBeforeUnmount(() => {
       data-chrome-theme="light"
     >
       <BaseContainer class="content-view__community-inner">
-        <aside
+        <section
           class="content-view__community-commons"
           aria-labelledby="community-commons-title"
         >
@@ -758,9 +655,9 @@ onBeforeUnmount(() => {
           >
             {{ pageContent.community.commons.action }}
           </BaseActionLink>
-        </aside>
+        </section>
 
-        <aside
+        <section
           class="content-view__community-open-source"
           aria-labelledby="community-open-source-title"
         >
@@ -797,7 +694,7 @@ onBeforeUnmount(() => {
               {{ pageContent.community.openSource.contributeAction }}
             </BaseActionLink>
           </div>
-        </aside>
+        </section>
       </BaseContainer>
     </section>
   </BaseView>

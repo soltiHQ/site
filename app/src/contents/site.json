@@ -1,7 +1,10 @@
 {
   "meta": {
+    "url": "https://solti.io/",
     "title": "Solti — Open-source task execution stack",
-    "description": "Build task-execution systems from composable open-source components for supervision, reconciliation, workload routing, agent APIs, discovery, and operations."
+    "description": "Build task-execution systems from composable open-source components for supervision, reconciliation, workload routing, agent APIs, discovery, and operations.",
+    "image": "https://solti.io/social/solti-preview.png",
+    "imageAlt": "Solti wordmark above a conductor coordinating three task-execution layers"
   },
   "brand": {
     "name": "Solti",
@@ -12,13 +15,12 @@
     "contributing": "https://github.com/soltiHQ/.github/blob/main/CONTRIBUTING.md",
     "agentOverview": "https://github.com/soltiHQ/dashboards/tree/main/solti/agent-overview",
     "taskvisorQuickStart": "https://github.com/soltiHQ/taskvisor#quick-start",
-    "taskvisorTenantSync": "https://github.com/soltiHQ/taskvisor/blob/main/examples/tenant_sync.rs",
     "sdkQuickStart": "https://github.com/soltiHQ/sdk#quick-start",
     "sdkHttpAgent": "https://github.com/soltiHQ/sdk/blob/main/crates/solti/examples/agent_http.rs",
     "sdkContainerdExample": "https://github.com/soltiHQ/sdk/blob/main/crates/solti/examples/task_containerd.rs",
     "sdkTaskExample": "https://github.com/soltiHQ/sdk/blob/main/crates/solti/examples/task_subprocess.rs",
     "sdkTaskContract": "https://github.com/soltiHQ/sdk/blob/main/crates/solti-api/CONTRACT.md",
-    "podium": "https://github.com/soltiHQ/podium",
+    "podiumRolloutReconciler": "https://github.com/soltiHQ/podium/blob/main/internal/server/runner/sync/runner.go",
     "mainContent": "#main-content",
     "stack": "#stack"
   },
@@ -31,7 +33,7 @@
   "actions": {
     "source": "Source ↗",
     "top": "Top ↑",
-    "quickStart": "Quick start ↗"
+    "explore": "Explore the stack ↓"
   },
   "media": {
     "hero": {
@@ -60,7 +62,6 @@
         "title": "Task execution stack.",
         "lede": "Starting work is easy, controlling its lifecycle is not.",
         "ledeEmphasis": "Solti makes it composable.",
-        "loading": "Loading Solti",
         "labels": {
           "podium": "Podium",
           "sdk": "SDK",
@@ -74,34 +75,42 @@
         "axis": "What Solti provides",
         "items": [
           {
+            "icon": "resource",
             "scope": "Resource contract",
             "body": "Versioned Task resources with metadata, desired state, observed status, and watches."
           },
           {
+            "icon": "routing",
             "scope": "Workload routing",
             "body": "Select a runner by workload kind and optional labels."
           },
           {
+            "icon": "reconciliation",
             "scope": "Reconciliation",
             "body": "Commit desired state first, then converge asynchronously on the latest generation."
           },
           {
+            "icon": "lifecycle",
             "scope": "Attempt lifecycle",
             "body": "Apply retries, backoff, timeouts, cancellation, replacement, and shutdown policy."
           },
           {
+            "icon": "execution",
             "scope": "Execution",
             "body": "Run subprocesses, native containerd 2.x on Linux, conditional chains, or application-owned workloads."
           },
           {
+            "icon": "api",
             "scope": "Agent APIs",
             "body": "Expose the same Task operations through HTTP/JSON or gRPC."
           },
           {
+            "icon": "discovery",
             "scope": "Discovery",
             "body": "Register agent identity, endpoints, API versions, and runner capabilities."
           },
           {
+            "icon": "operations",
             "scope": "Operations",
             "body": "Add TLS, structured logging, Prometheus metrics, and live output."
           }
@@ -158,7 +167,7 @@
               "Per-Agent Rollout Reconciliation"
             ],
             "action": "Inspect the rollout reconciler ↗",
-            "link": "podium"
+            "link": "podiumRolloutReconciler"
           }
         ]
       },
@@ -168,7 +177,7 @@
         "lede": "Solti provides execution boundaries, not one finished product. Start with the form that matches the system you are building.",
         "items": [
           {
-            "tone": "stack",
+            "tone": "taskvisor",
             "product": "A supervised Rust service",
             "title": "Own background work inside one process.",
             "body": "Give asynchronous operations explicit retry, timeout, cancellation, conflict, shutdown, and outcome policy without introducing an agent API or external control plane.",
@@ -176,7 +185,7 @@
             "link": "taskvisorQuickStart"
           },
           {
-            "tone": "stack",
+            "tone": "sdk",
             "product": "A versioned workload agent",
             "title": "Turn one binary into an execution boundary.",
             "body": "Accept Tasks through HTTP or gRPC, route by workload kind, reconcile the latest desired state, and expose status, live output, and bounded history.",
@@ -184,7 +193,7 @@
             "link": "sdkHttpAgent"
           },
           {
-            "tone": "stack",
+            "tone": "sdk",
             "product": "A host workload controller",
             "title": "Keep processes and containers running without a cluster.",
             "body": "Build an agent for subprocesses or native containerd 2.x workloads on one Linux host without taking on cluster scheduling, networking, or storage orchestration.",
@@ -192,12 +201,12 @@
             "link": "sdkContainerdExample"
           },
           {
-            "tone": "stack",
+            "tone": "podium",
             "product": "A control plane across agents",
             "title": "Coordinate desired work across selected hosts.",
             "body": "Persist specifications and per-agent rollout state, discover compatible agents, and reconcile install, update, or removal instead of operating every endpoint by hand.",
             "action": "Inspect rollout reconciliation ↗",
-            "link": "podium"
+            "link": "podiumRolloutReconciler"
           }
         ]
       },
@@ -292,18 +301,22 @@
         "lede": "Solti provides components for building the system. Your product defines the final host, agent, or control plane.",
         "choices": [
           {
+            "featured": false,
             "need": "One retried future or a fixed worker set",
             "answer": "Tokio primitives and a focused retry helper may be enough."
           },
           {
+            "featured": false,
             "need": "Conditional multi-step execution",
             "answer": "Solti Chain runs an acyclic sequence with success and failure branches inside one Task attempt. It does not persist step progress or resume after a process crash."
           },
           {
+            "featured": false,
             "need": "Host or fleet workload control",
             "answer": "Build it with Solti when your application selects the target agents. Use Kubernetes or Nomad when you need built-in resource placement, bin packing, networking, or storage orchestration."
           },
           {
+            "featured": true,
             "need": "Application-owned execution across one process, host, or selected agents",
             "answer": "Build it with Solti."
           }
