@@ -20,7 +20,7 @@
     "sdkContainerdExample": "https://github.com/soltiHQ/sdk/blob/main/crates/solti/examples/task_containerd.rs",
     "sdkTaskExample": "https://github.com/soltiHQ/sdk/blob/main/crates/solti/examples/task_subprocess.rs",
     "sdkTaskContract": "https://github.com/soltiHQ/sdk/blob/main/crates/solti-api/CONTRACT.md",
-    "podiumRolloutReconciler": "https://github.com/soltiHQ/podium/blob/main/internal/server/runner/sync/runner.go",
+    "podiumRolloutReconciler": "https://github.com/soltiHQ/podium/blob/main/internal/server/runner/sync/runner.go#L65-L123",
     "mainContent": "#main-content",
     "stack": "#stack"
   },
@@ -332,13 +332,13 @@
           "eyebrow": "Operational commons",
           "title": "See the runtime as a system.",
           "body": "Agent Overview is an Apache-2.0 Grafana dashboard for task state, lifecycle, API, discovery, and host metrics exposed by SDK-based agents.",
-          "action": "Explore Agent Overview ↗"
+          "action": "Open Agent Overview ↗"
         },
         "openSource": {
           "eyebrow": "Open source · Apache-2.0",
           "title": "Use one component. Shape the next boundary.",
           "body": "Start with a runnable example. Open an issue when a contract does not fit. Contribute a focused fix, example, runner, dashboard, or document when you know what should change.",
-          "action": "Explore Solti on GitHub ↗",
+          "action": "Browse the repositories ↗",
           "contributeAction": "Read the contribution guide ↗"
         }
       }

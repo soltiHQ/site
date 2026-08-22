@@ -3,6 +3,10 @@
 
 @layer views {
   .content-view {
+    --title-aside: clamp(1.5rem, 2.3vw, 2.25rem);
+    --title-section: clamp(2.2rem, 4.8vw, 4.8rem);
+    --title-display: clamp(3rem, 6.48vw, 6.48rem);
+
     position: relative;
     min-height: 0;
     overflow-x: clip;
@@ -61,7 +65,7 @@
 
   .content-view__hero-title {
     max-width: min(21ch, 100%);
-    font-size: clamp(2.4rem, 5vw, 5.25rem);
+    font-size: var(--title-display);
     font-weight: var(--font-weight-medium);
     letter-spacing: -0.025em;
     line-height: 0.96;
@@ -236,7 +240,7 @@
 
   .content-view__stack-title {
     max-width: 12ch;
-    font-size: clamp(3rem, 5.2vw, 5.5rem);
+    font-size: var(--title-section);
     font-weight: var(--font-weight-medium);
     letter-spacing: -0.035em;
     line-height: 0.98;
@@ -393,7 +397,7 @@
   .content-view__use-cases-title,
   .content-view__fit-title {
     max-width: 12ch;
-    font-size: clamp(3rem, 5.2vw, 5.5rem);
+    font-size: var(--title-section);
     font-weight: var(--font-weight-medium);
     letter-spacing: -0.035em;
     line-height: 0.98;
@@ -409,7 +413,6 @@
 
   .content-view__use-cases-title {
     max-width: 16ch;
-    font-size: clamp(2.75rem, 4.6vw, 4.9rem);
   }
 
   .content-view__composition {
@@ -434,7 +437,7 @@
 
   .content-view__composition-title {
     max-width: 9ch;
-    font-size: clamp(3rem, 4.7vw, 5.25rem);
+    font-size: var(--title-section);
     font-weight: var(--font-weight-medium);
     letter-spacing: -0.035em;
     line-height: 0.98;
@@ -722,7 +725,7 @@
   .content-view__proof-title {
     max-width: 12ch;
     grid-area: title;
-    font-size: clamp(3rem, 5.2vw, 5.5rem);
+    font-size: var(--title-section);
     font-weight: var(--font-weight-medium);
     letter-spacing: -0.035em;
     line-height: 0.98;
@@ -1086,7 +1089,7 @@
   }
 
   .content-view__community-commons-title {
-    font-size: clamp(1.5rem, 2.3vw, 2.25rem);
+    font-size: var(--title-aside);
     font-weight: var(--font-weight-medium);
     letter-spacing: -0.025em;
     line-height: 1.05;
@@ -1133,7 +1136,7 @@
   .content-view__community-open-source-title {
     max-width: 16ch;
     color: var(--color-text-inverse);
-    font-size: clamp(2.25rem, 4vw, 4rem);
+    font-size: var(--title-section);
     font-weight: var(--font-weight-medium);
     letter-spacing: -0.035em;
     line-height: 1;
@@ -1245,7 +1248,6 @@
     .content-view__fit-title,
     .content-view__proof-title {
       max-width: 11ch;
-      font-size: clamp(2.75rem, 9vw, 4.5rem);
     }
 
     .content-view__composition-inner,
@@ -1261,7 +1263,6 @@
 
     .content-view__composition-title {
       max-width: 11ch;
-      font-size: clamp(2.75rem, 9vw, 4.5rem);
     }
 
     .content-view__proof-intro {
