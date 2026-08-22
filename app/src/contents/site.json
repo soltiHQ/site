@@ -248,27 +248,33 @@
           "lines": [
             {
               "tone": "state",
-              "text": "[workload] image=docker.io/library/alpine:3.21, network=None."
+              "text": "[workload] image=docker.io/library/alpine:3.21, network=None.",
+              "delay": 140
             },
             {
               "tone": "state",
-              "text": "[probe] Connected to engine=containerd version=2.0."
+              "text": "[probe] Connected to engine=containerd version=2.0.",
+              "delay": 360
             },
             {
               "tone": "stream",
-              "text": "[policy] capabilities=[], noNewPrivileges=true, umask=077, seccomp=DenyHostControl."
+              "text": "[policy] capabilities=[], noNewPrivileges=true, umask=077, seccomp=DenyHostControl.",
+              "delay": 150
             },
             {
               "tone": "success",
-              "text": "[core] Committed task=container-example generation=1."
+              "text": "[core] Committed task=container-example generation=1.",
+              "delay": 440
             },
             {
               "tone": "success",
-              "text": "[result] taskPhase=succeeded, runPhase=succeeded, attempt=1."
+              "text": "[result] taskPhase=succeeded, runPhase=succeeded, attempt=1.",
+              "delay": 900
             },
             {
               "tone": "state",
-              "text": "[shutdown] Supervisor and containerd cleanup worker stopped."
+              "text": "[shutdown] Supervisor and containerd cleanup worker stopped.",
+              "delay": 380
             }
           ]
         },

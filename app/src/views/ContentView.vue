@@ -19,6 +19,10 @@ import BaseView from '@/components/view/BaseView.vue'
 import { siteContent } from '@/contents'
 
 const heroVideo = ref<HTMLVideoElement | null>(null)
+const traceOutput = ref<HTMLElement | null>(null)
+// -1 renders the finished trace. Playback only arms itself when it can actually run, so
+// no-JS, no IntersectionObserver, and reduced motion all get the complete output instead.
+const traceRevealed = ref(-1)
 const stackOutro = ref<HTMLElement | null>(null)
 const stackOutroVisible = ref(false)
 const pageContent = siteContent.pages.content
@@ -63,6 +67,8 @@ function stackMediaUrl(path: string) {
 
 const heroPosterUrl = heroMediaUrl(heroMedia.poster)
 
+let traceObserver: IntersectionObserver | undefined
+let traceTimeout: number | undefined
 let videoObserver: IntersectionObserver | undefined
 let stackObserver: IntersectionObserver | undefined
 let heroIsVisible = false
@@ -108,6 +114,22 @@ function handleViewportResize() {
   updateHeroVideo()
 }
 
+function playTrace() {
+  const lines = pageContent.proof.trace.lines
+  const first = lines[0]
+  if (!first) return
+
+  const step = () => {
+    traceTimeout = undefined
+    traceRevealed.value += 1
+    const next = lines[traceRevealed.value]
+    if (!next) return
+    traceTimeout = window.setTimeout(step, next.delay)
+  }
+
+  traceTimeout = window.setTimeout(step, first.delay)
+}
+
 onMounted(() => {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -129,6 +151,23 @@ onMounted(() => {
 
       stackObserver.observe(outro)
     }
+  }
+
+  const trace = traceOutput.value
+  if (trace && !reducedMotion && 'IntersectionObserver' in window) {
+    traceRevealed.value = 0
+    traceObserver = new IntersectionObserver(
+      ([entry], observer) => {
+        if (!entry?.isIntersecting) return
+
+        observer.disconnect()
+        traceObserver = undefined
+        playTrace()
+      },
+      { rootMargin: '0px 0px -12% 0px', threshold: 0.4 },
+    )
+
+    traceObserver.observe(trace)
   }
 
   if (reducedMotion) {
@@ -164,6 +203,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (traceTimeout !== undefined) window.clearTimeout(traceTimeout)
+  traceObserver?.disconnect()
   videoObserver?.disconnect()
   stackObserver?.disconnect()
   document.removeEventListener('visibilitychange', updateHeroVideo)
@@ -577,16 +618,22 @@ onBeforeUnmount(() => {
               </span>
             </header>
             <pre
+              ref="traceOutput"
               class="content-view__proof-code content-view__proof-code--trace"
               tabindex="0"
             ><code><span class="content-view__proof-trace-command">{{ pageContent.proof.trace.command }}</span><span
-              v-for="line in pageContent.proof.trace.lines"
+              v-for="(line, index) in pageContent.proof.trace.lines"
               :key="line.text"
               :class="[
                 'content-view__proof-code-line',
                 'content-view__proof-code-line--' + line.tone,
+                { 'is-pending': traceRevealed >= 0 && index >= traceRevealed },
               ]"
-            >{{ line.text }}</span></code></pre>
+            >{{ line.text }}</span><span
+              v-if="traceRevealed >= 0 && traceRevealed < pageContent.proof.trace.lines.length"
+              class="content-view__proof-trace-cursor"
+              aria-hidden="true"
+            ></span></code></pre>
           </article>
         </div>
 

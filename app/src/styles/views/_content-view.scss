@@ -879,6 +879,36 @@
     color: var(--color-text-subtle);
   }
 
+  .content-view__proof-code--trace .content-view__proof-code-line {
+    transition:
+      opacity var(--duration-normal) var(--ease-standard),
+      transform var(--duration-normal) var(--ease-standard);
+  }
+
+  .content-view__proof-code--trace .content-view__proof-code-line.is-pending {
+    opacity: 0;
+    transform: translateY(0.2em);
+  }
+
+  .content-view__proof-trace-cursor {
+    display: inline-block;
+    width: 0.55em;
+    height: 1.05em;
+    background: var(--color-accent-on-dark);
+    animation: solti-trace-cursor 1s steps(2, jump-none) infinite;
+    vertical-align: text-bottom;
+  }
+
+  @keyframes solti-trace-cursor {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0;
+    }
+  }
+
   .content-view__proof-code-line--success {
     color: var(--color-accent-on-dark);
   }
