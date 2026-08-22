@@ -33,6 +33,8 @@ const traceAwaiting = computed(
 )
 const stackOutro = ref<HTMLElement | null>(null)
 const stackOutroVisible = ref(false)
+const stackList = ref<HTMLElement | null>(null)
+const stackListVisible = ref(false)
 const fitChoices = ref<HTMLElement | null>(null)
 const fitChoicesVisible = ref(false)
 const pageContent = siteContent.pages.content
@@ -77,6 +79,7 @@ function stackMediaUrl(path: string) {
 
 const heroPosterUrl = heroMediaUrl(heroMedia.poster)
 
+let stackListObserver: IntersectionObserver | undefined
 let fitObserver: IntersectionObserver | undefined
 let traceObserver: IntersectionObserver | undefined
 let traceTimeout: number | undefined
@@ -168,6 +171,26 @@ onMounted(() => {
     }
   }
 
+  const list = stackList.value
+  if (list) {
+    if (reducedMotion || !('IntersectionObserver' in window)) {
+      stackListVisible.value = true
+    } else {
+      stackListObserver = new IntersectionObserver(
+        ([entry], observer) => {
+          if (!entry?.isIntersecting) return
+
+          stackListVisible.value = true
+          observer.disconnect()
+          stackListObserver = undefined
+        },
+        { rootMargin: '0px 0px -12% 0px', threshold: 0.18 },
+      )
+
+      stackListObserver.observe(list)
+    }
+  }
+
   const choices = fitChoices.value
   if (choices) {
     if (reducedMotion || !('IntersectionObserver' in window)) {
@@ -239,6 +262,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (traceTimeout !== undefined) window.clearTimeout(traceTimeout)
+  stackListObserver?.disconnect()
   fitObserver?.disconnect()
   traceObserver?.disconnect()
   videoObserver?.disconnect()
@@ -384,11 +408,16 @@ onBeforeUnmount(() => {
           {{ pageContent.stack.axis }}
         </BaseText>
 
-        <ul class="content-view__stack-list">
+        <ul
+          ref="stackList"
+          class="content-view__stack-list"
+          :class="{ 'content-view__stack-list--revealed': stackListVisible }"
+        >
           <li
             v-for="(item, index) in pageContent.stack.items"
             :key="item.scope"
             class="content-view__stack-item"
+            :style="{ '--reveal-index': index }"
           >
             <div class="content-view__stack-item-meta" aria-hidden="true">
               <component
