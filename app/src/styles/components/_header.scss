@@ -27,6 +27,8 @@
   }
 
   .site-header__glass {
+    --effect-glass-opacity: 70%;
+
     position: relative;
     width: 100%;
     min-height: var(--layout-header-height);

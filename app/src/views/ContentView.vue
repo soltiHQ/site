@@ -1,118 +1,103 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import {
+  Activity,
+  FileJson2,
+  Network,
+  Play,
+  Radar,
+  RefreshCw,
+  Route,
+  TimerReset,
+} from '@lucide/vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import BaseContainer from '@/components/layout/BaseContainer.vue'
 import BaseActionLink from '@/components/ui/BaseActionLink.vue'
 import BaseHeading from '@/components/ui/BaseHeading.vue'
 import BaseText from '@/components/ui/BaseText.vue'
 import BaseView from '@/components/view/BaseView.vue'
-import soltiLogoDarkUrl from '@/assets/logo/solti-logo-dark.svg'
 import { siteContent } from '@/contents'
 
 const heroVideo = ref<HTMLVideoElement | null>(null)
-const heroConductor = ref<HTMLImageElement | null>(null)
-const isHeroLoading = ref(true)
+const traceOutput = ref<HTMLElement | null>(null)
+// -1 renders the finished trace. Playback only arms itself when it can actually run, so
+// no-JS, no IntersectionObserver, and reduced motion all get the complete output instead.
+const traceRevealed = ref(-1)
+// While the trace is mid-run, the manifest line that caused it and the connector between
+// the panels both read as live, so the reader sees the cause next to the effect.
+const traceRunning = ref(false)
+// The cursor sits in the panel from the moment playback is armed, so an empty terminal
+// reads as a waiting prompt rather than as a broken panel.
+const traceAwaiting = computed(
+  () => traceRevealed.value >= 0 && traceRevealed.value < pageContent.proof.trace.lines.length,
+)
+const stackOutro = ref<HTMLElement | null>(null)
+const stackOutroVisible = ref(false)
+const stackList = ref<HTMLElement | null>(null)
+const stackListVisible = ref(false)
+const fitChoices = ref<HTMLElement | null>(null)
+const fitCards = computed(() =>
+  pageContent.fit.choices.map((choice) => ({
+    ...choice,
+    items: choice.items.map((item) => {
+      const at = item.lastIndexOf('→')
+      return at === -1
+        ? { need: item, answer: '' }
+        : { need: item.slice(0, at).trim(), answer: item.slice(at + 1).trim() }
+    }),
+  })),
+)
+const fitChoicesVisible = ref(false)
 const pageContent = siteContent.pages.content
 const heroMedia = siteContent.media.hero
-const HERO_LOADING_TIMEOUT_MS = 8_000
+const stackMedia = siteContent.media.stack
+type SiteLinkKey = keyof typeof siteContent.links
+
+const stackIcons = {
+  resource: FileJson2,
+  routing: Route,
+  reconciliation: RefreshCw,
+  lifecycle: TimerReset,
+  execution: Play,
+  api: Network,
+  discovery: Radar,
+  operations: Activity,
+} as const
+
+function stackIcon(key: string) {
+  if (!(key in stackIcons)) {
+    throw new Error(`Unknown stack icon: ${key}`)
+  }
+
+  return stackIcons[key as keyof typeof stackIcons]
+}
+
+function siteLink(key: string) {
+  if (!(key in siteContent.links)) {
+    throw new Error(`Unknown site link: ${key}`)
+  }
+
+  return siteContent.links[key as SiteLinkKey]
+}
 
 function heroMediaUrl(path: string) {
   return `${path}?v=${heroMedia.version}`
 }
 
+function stackMediaUrl(path: string) {
+  return `${path}?v=${stackMedia.version}`
+}
+
 const heroPosterUrl = heroMediaUrl(heroMedia.poster)
 
+let stackListObserver: IntersectionObserver | undefined
+let fitObserver: IntersectionObserver | undefined
+let traceObserver: IntersectionObserver | undefined
+let traceTimeout: number | undefined
 let videoObserver: IntersectionObserver | undefined
+let stackObserver: IntersectionObserver | undefined
 let heroIsVisible = false
 let loadedVideoTier: 'mobile' | 'standard' | 'large' | undefined
-let videoHydrationStarted = false
-let reducedMotion = false
-let posterSettled = false
-let conductorSettled = false
-let videoSettled = false
-let heroLoadingTimeout: number | undefined
-let sourceErrorCheckTimeout: number | undefined
-let posterLoader: HTMLImageElement | undefined
-let componentUnmounted = false
-let appRoot: HTMLElement | null = null
-let appRootWasInert = false
-let pageInteractionLocked = false
-
-function lockPageInteraction() {
-  appRoot = document.getElementById('app')
-  appRootWasInert = appRoot?.hasAttribute('inert') ?? false
-  appRoot?.setAttribute('inert', '')
-  document.documentElement.classList.add('has-active-preloader')
-  pageInteractionLocked = true
-}
-
-function restorePageInteraction() {
-  if (!pageInteractionLocked) return
-  if (!appRootWasInert) appRoot?.removeAttribute('inert')
-  document.documentElement.classList.remove('has-active-preloader')
-  pageInteractionLocked = false
-  appRoot = null
-}
-
-function clearHeroLoadingResources() {
-  if (heroLoadingTimeout !== undefined) {
-    window.clearTimeout(heroLoadingTimeout)
-    heroLoadingTimeout = undefined
-  }
-
-  if (sourceErrorCheckTimeout !== undefined) {
-    window.clearTimeout(sourceErrorCheckTimeout)
-    sourceErrorCheckTimeout = undefined
-  }
-
-  if (posterLoader) {
-    posterLoader.onload = null
-    posterLoader.onerror = null
-    posterLoader = undefined
-  }
-}
-
-function finishHeroLoading() {
-  if (componentUnmounted || !isHeroLoading.value) return
-  isHeroLoading.value = false
-  clearHeroLoadingResources()
-}
-
-function updateHeroLoading() {
-  if (posterSettled && conductorSettled && (reducedMotion || videoSettled)) {
-    finishHeroLoading()
-  }
-}
-
-function settleHeroPoster() {
-  posterSettled = true
-  updateHeroLoading()
-}
-
-function settleHeroConductor() {
-  conductorSettled = true
-  updateHeroLoading()
-}
-
-function settleHeroVideo() {
-  videoSettled = true
-  updateHeroLoading()
-}
-
-function handleHeroSourceError() {
-  if (!isHeroLoading.value || !videoHydrationStarted) return
-
-  if (sourceErrorCheckTimeout !== undefined) {
-    window.clearTimeout(sourceErrorCheckTimeout)
-  }
-
-  sourceErrorCheckTimeout = window.setTimeout(() => {
-    sourceErrorCheckTimeout = undefined
-    if (heroVideo.value?.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) {
-      settleHeroVideo()
-    }
-  })
-}
 
 function getHeroVideoTier() {
   if (window.innerWidth >= 1920) return 'large'
@@ -121,7 +106,6 @@ function getHeroVideoTier() {
 }
 
 function hydrateVideo(video: HTMLVideoElement) {
-  videoHydrationStarted = true
   let changed = false
   video.querySelectorAll<HTMLSourceElement>('source[data-src]').forEach((source) => {
     if (!source.dataset.src) return
@@ -155,28 +139,117 @@ function handleViewportResize() {
   updateHeroVideo()
 }
 
+function playTrace() {
+  const lines = pageContent.proof.trace.lines
+  const first = lines[0]
+  if (!first) return
+
+  const step = () => {
+    traceTimeout = undefined
+    traceRevealed.value += 1
+    const next = lines[traceRevealed.value]
+    if (!next) {
+      traceRunning.value = false
+      return
+    }
+    traceTimeout = window.setTimeout(step, next.delay)
+  }
+
+  traceRunning.value = true
+  traceTimeout = window.setTimeout(step, first.delay)
+}
+
 onMounted(() => {
-  lockPageInteraction()
-  reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  heroLoadingTimeout = window.setTimeout(finishHeroLoading, HERO_LOADING_TIMEOUT_MS)
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-  posterLoader = new Image()
-  posterLoader.onload = settleHeroPoster
-  posterLoader.onerror = settleHeroPoster
-  posterLoader.src = heroPosterUrl
-  if (posterLoader.complete) settleHeroPoster()
+  const outro = stackOutro.value
+  if (outro) {
+    if (reducedMotion || !('IntersectionObserver' in window)) {
+      stackOutroVisible.value = true
+    } else {
+      stackObserver = new IntersectionObserver(
+        ([entry], observer) => {
+          if (!entry?.isIntersecting) return
 
-  if (heroConductor.value?.complete) settleHeroConductor()
+          stackOutroVisible.value = true
+          observer.disconnect()
+          stackObserver = undefined
+        },
+        { rootMargin: '0px 0px -12% 0px', threshold: 0.18 },
+      )
+
+      stackObserver.observe(outro)
+    }
+  }
+
+  const list = stackList.value
+  if (list) {
+    if (reducedMotion || !('IntersectionObserver' in window)) {
+      stackListVisible.value = true
+    } else {
+      stackListObserver = new IntersectionObserver(
+        ([entry], observer) => {
+          if (!entry?.isIntersecting) return
+
+          stackListVisible.value = true
+          observer.disconnect()
+          stackListObserver = undefined
+        },
+        { rootMargin: '0px 0px -12% 0px', threshold: 0.18 },
+      )
+
+      stackListObserver.observe(list)
+    }
+  }
+
+  const choices = fitChoices.value
+  if (choices) {
+    if (reducedMotion || !('IntersectionObserver' in window)) {
+      fitChoicesVisible.value = true
+    } else {
+      fitObserver = new IntersectionObserver(
+        ([entry], observer) => {
+          if (!entry?.isIntersecting) return
+
+          fitChoicesVisible.value = true
+          observer.disconnect()
+          fitObserver = undefined
+        },
+        { rootMargin: '0px 0px -12% 0px', threshold: 0.18 },
+      )
+
+      fitObserver.observe(choices)
+    }
+  }
+
+  const trace = traceOutput.value
+  if (trace && !reducedMotion && 'IntersectionObserver' in window) {
+    traceRevealed.value = 0
+    traceObserver = new IntersectionObserver(
+      ([entry], observer) => {
+        if (!entry?.isIntersecting) return
+
+        observer.disconnect()
+        traceObserver = undefined
+        playTrace()
+      },
+      { rootMargin: '0px 0px -12% 0px', threshold: 0.4 },
+    )
+
+    traceObserver.observe(trace)
+  }
 
   if (reducedMotion) {
-    updateHeroLoading()
     return
   }
 
+  const connection = (
+    navigator as Navigator & { connection?: { saveData?: boolean } }
+  ).connection
+  if (connection?.saveData) return
+
   const video = heroVideo.value
   if (!video) return
-
-  if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) settleHeroVideo()
 
   document.addEventListener('visibilitychange', updateHeroVideo)
   window.addEventListener('resize', handleViewportResize)
@@ -199,42 +272,19 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  componentUnmounted = true
-  clearHeroLoadingResources()
-  restorePageInteraction()
+  if (traceTimeout !== undefined) window.clearTimeout(traceTimeout)
+  stackListObserver?.disconnect()
+  fitObserver?.disconnect()
+  traceObserver?.disconnect()
   videoObserver?.disconnect()
+  stackObserver?.disconnect()
   document.removeEventListener('visibilitychange', updateHeroVideo)
   window.removeEventListener('resize', handleViewportResize)
 })
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="content-view-preloader" @after-leave="restorePageInteraction">
-      <div
-        v-if="isHeroLoading"
-        class="content-view__preloader"
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        <div class="content-view__preloader-mark">
-          <img
-            class="content-view__preloader-logo"
-            :src="soltiLogoDarkUrl"
-            alt=""
-            width="460"
-            height="460"
-            aria-hidden="true"
-          />
-          <span class="content-view__preloader-track" aria-hidden="true"></span>
-        </div>
-        <span class="u-visually-hidden">{{ pageContent.hero.loading }}</span>
-      </div>
-    </Transition>
-  </Teleport>
-
-  <BaseView class="content-view" :aria-busy="isHeroLoading ? 'true' : 'false'">
+  <BaseView class="content-view">
     <section
       class="content-view__hero"
       aria-labelledby="hero-title"
@@ -250,48 +300,39 @@ onBeforeUnmount(() => {
           preload="metadata"
           :poster="heroPosterUrl"
           tabindex="-1"
-          @loadeddata="settleHeroVideo"
-          @error="settleHeroVideo"
         >
+          <source
+            :data-src="heroMediaUrl(heroMedia.video.large.webm)"
+            type='video/webm; codecs="av01.0.12M.08"'
+            media="(prefers-reduced-motion: no-preference) and (min-width: 1920px)"
+          />
           <source
             :data-src="heroMediaUrl(heroMedia.video.large.mp4)"
             type="video/mp4"
             media="(prefers-reduced-motion: no-preference) and (min-width: 1920px)"
-            @error="handleHeroSourceError"
           />
           <source
-            :data-src="heroMediaUrl(heroMedia.video.large.webm)"
-            type="video/webm"
-            media="(prefers-reduced-motion: no-preference) and (min-width: 1920px)"
-            @error="handleHeroSourceError"
+            :data-src="heroMediaUrl(heroMedia.video.standard.webm)"
+            type='video/webm; codecs="av01.0.08M.08"'
+            media="(prefers-reduced-motion: no-preference) and (min-width: 768px)"
           />
           <source
             :data-src="heroMediaUrl(heroMedia.video.standard.mp4)"
             type="video/mp4"
             media="(prefers-reduced-motion: no-preference) and (min-width: 768px)"
-            @error="handleHeroSourceError"
           />
           <source
-            :data-src="heroMediaUrl(heroMedia.video.standard.webm)"
-            type="video/webm"
-            media="(prefers-reduced-motion: no-preference) and (min-width: 768px)"
-            @error="handleHeroSourceError"
+            :data-src="heroMediaUrl(heroMedia.video.mobile.webm)"
+            type='video/webm; codecs="av01.0.08M.08"'
+            media="(prefers-reduced-motion: no-preference)"
           />
           <source
             :data-src="heroMediaUrl(heroMedia.video.mobile.mp4)"
             type="video/mp4"
             media="(prefers-reduced-motion: no-preference)"
-            @error="handleHeroSourceError"
-          />
-          <source
-            :data-src="heroMediaUrl(heroMedia.video.mobile.webm)"
-            type="video/webm"
-            media="(prefers-reduced-motion: no-preference)"
-            @error="handleHeroSourceError"
           />
         </video>
         <img
-          ref="heroConductor"
           class="content-view__hero-conductor"
           :src="heroMediaUrl(heroMedia.conductor)"
           alt=""
@@ -299,8 +340,6 @@ onBeforeUnmount(() => {
           height="1644"
           decoding="async"
           fetchpriority="high"
-          @load="settleHeroConductor"
-          @error="settleHeroConductor"
         />
         <div class="content-view__visual-labels content-view__visual-labels--rest">
           <span class="content-view__visual-label content-view__visual-label--podium">
@@ -326,9 +365,14 @@ onBeforeUnmount(() => {
             {{ pageContent.hero.title }}
           </BaseHeading>
           <BaseText class="content-view__hero-lede" tone="muted">
-            {{ pageContent.hero.lede }}
+            <span>{{ pageContent.hero.lede }}</span>
+            <span>{{ pageContent.hero.ledeEmphasis }}</span>
           </BaseText>
-          <BaseActionLink :href="siteContent.links.stack" variant="primary">
+          <BaseActionLink
+            :href="siteContent.links.github"
+            variant="primary"
+            external
+          >
             {{ siteContent.actions.explore }}
           </BaseActionLink>
         </div>
@@ -337,8 +381,162 @@ onBeforeUnmount(() => {
 
     <section
       id="stack"
-      class="content-view__composition"
+      class="content-view__stack"
       aria-labelledby="stack-title"
+      data-chrome-theme="light"
+    >
+      <BaseContainer class="content-view__stack-inner">
+        <header class="content-view__stack-intro">
+          <div class="content-view__stack-heading">
+            <BaseText
+              as="p"
+              size="caption"
+              tone="subtle"
+              class="content-view__stack-eyebrow"
+            >
+              {{ pageContent.stack.eyebrow }}
+            </BaseText>
+            <BaseHeading
+              id="stack-title"
+              as="h2"
+              size="h1"
+              class="content-view__stack-title"
+            >
+              {{ pageContent.stack.title }}
+            </BaseHeading>
+          </div>
+          <BaseText tone="muted" class="content-view__stack-lede">
+            {{ pageContent.stack.lede }}
+          </BaseText>
+        </header>
+
+        <BaseText
+          as="p"
+          size="caption"
+          tone="subtle"
+          class="content-view__stack-axis"
+        >
+          {{ pageContent.stack.axis }}
+        </BaseText>
+
+        <ul
+          ref="stackList"
+          class="content-view__stack-list"
+          :class="{ 'content-view__stack-list--revealed': stackListVisible }"
+        >
+          <li
+            v-for="(item, index) in pageContent.stack.items"
+            :key="item.scope"
+            class="content-view__stack-item"
+            :style="{ '--reveal-index': index }"
+          >
+            <div class="content-view__stack-item-meta" aria-hidden="true">
+              <component
+                :is="stackIcon(item.icon)"
+                class="content-view__stack-icon"
+                :size="28"
+                :stroke-width="1.5"
+                :absolute-stroke-width="true"
+              />
+              <span class="content-view__stack-index">
+                {{ String(index + 1).padStart(2, '0') }}
+              </span>
+            </div>
+            <BaseHeading as="h3" size="h2" class="content-view__stack-item-title">
+              {{ item.scope }}
+            </BaseHeading>
+            <BaseText tone="muted" class="content-view__stack-item-body">
+              {{ item.body }}
+            </BaseText>
+          </li>
+        </ul>
+        <div
+          ref="stackOutro"
+          class="content-view__stack-outro"
+          :class="{ 'content-view__stack-outro--visible': stackOutroVisible }"
+        >
+          <p class="content-view__stack-principle">
+            {{ pageContent.stack.principle }}
+          </p>
+          <div class="content-view__stack-artwork" aria-hidden="true">
+            <img
+              class="content-view__stack-artwork-image"
+              :src="stackMediaUrl(stackMedia.hands)"
+              alt=""
+              width="1200"
+              height="800"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        </div>
+      </BaseContainer>
+    </section>
+
+    <section
+      id="use-cases"
+      class="content-view__use-cases"
+      aria-labelledby="use-cases-title"
+      data-chrome-theme="light"
+    >
+      <BaseContainer class="content-view__use-cases-inner">
+        <header class="content-view__use-cases-intro">
+          <div class="content-view__use-cases-heading">
+            <BaseText
+              as="p"
+              size="caption"
+              tone="subtle"
+              class="content-view__use-cases-eyebrow"
+            >
+              {{ pageContent.useCases.eyebrow }}
+            </BaseText>
+            <BaseHeading
+              id="use-cases-title"
+              as="h2"
+              size="h1"
+              class="content-view__use-cases-title"
+            >
+              {{ pageContent.useCases.title }}
+            </BaseHeading>
+          </div>
+          <BaseText tone="muted" class="content-view__use-cases-lede">
+            {{ pageContent.useCases.lede }}
+          </BaseText>
+        </header>
+
+        <ul class="content-view__use-case-list">
+          <li
+            v-for="item in pageContent.useCases.items"
+            :key="item.title"
+            :class="[
+              'content-view__use-case',
+              'content-view__use-case--' + item.tone,
+            ]"
+          >
+            <span class="content-view__use-case-product">{{ item.product }}</span>
+            <BaseHeading as="h3" size="h2" class="content-view__use-case-title">
+              {{ item.title }}
+            </BaseHeading>
+            <BaseText tone="muted" class="content-view__use-case-body">
+              {{ item.body }}
+            </BaseText>
+            <a
+              class="content-view__use-case-link"
+              :href="siteLink(item.link)"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {{ item.action }}
+            </a>
+          </li>
+        </ul>
+      </BaseContainer>
+    </section>
+
+    <section
+      id="components"
+      class="content-view__composition"
+      aria-labelledby="components-title"
       data-chrome-theme="light"
     >
       <BaseContainer class="content-view__composition-inner">
@@ -349,31 +547,31 @@ onBeforeUnmount(() => {
             tone="subtle"
             class="content-view__composition-eyebrow"
           >
-            {{ pageContent.composition.eyebrow }}
+            {{ pageContent.components.eyebrow }}
           </BaseText>
           <BaseHeading
-            id="stack-title"
+            id="components-title"
             as="h2"
             size="h1"
             class="content-view__composition-title"
           >
-            {{ pageContent.composition.title }}
+            {{ pageContent.components.title }}
           </BaseHeading>
           <BaseText tone="muted" class="content-view__composition-lede">
-            {{ pageContent.composition.lede }}
+            {{ pageContent.components.lede }}
           </BaseText>
         </header>
 
-        <ol class="content-view__composition-levels">
+        <ul class="content-view__composition-levels">
           <li
-            v-for="level in pageContent.composition.levels"
-            :key="level.index"
-            class="content-view__composition-level"
+            v-for="level in pageContent.components.levels"
+            :key="level.product"
+            :class="[
+              'content-view__composition-level',
+              'content-view__composition-level--' + level.tone,
+            ]"
           >
             <div class="content-view__composition-meta">
-              <span class="content-view__composition-index" aria-hidden="true">
-                {{ level.index }}
-              </span>
               <span class="content-view__composition-scope">{{ level.scope }}</span>
             </div>
             <div class="content-view__composition-copy">
@@ -388,9 +586,14 @@ onBeforeUnmount(() => {
               <BaseText tone="muted" class="content-view__composition-level-body">
                 {{ level.body }}
               </BaseText>
+              <ul class="content-view__composition-capabilities">
+                <li v-for="capability in level.capabilities" :key="capability">
+                  {{ capability }}
+                </li>
+              </ul>
               <a
                 class="content-view__composition-link"
-                :href="level.href"
+                :href="siteLink(level.link)"
                 target="_blank"
                 rel="noreferrer"
               >
@@ -398,7 +601,7 @@ onBeforeUnmount(() => {
               </a>
             </div>
           </li>
-        </ol>
+        </ul>
       </BaseContainer>
     </section>
 
@@ -459,12 +662,18 @@ onBeforeUnmount(() => {
               tabindex="0"
             ><code><span
               v-for="(line, index) in pageContent.proof.manifest.lines"
-              :key="`${index}-${line}`"
-              class="content-view__proof-code-line"
+              :key="index"
+              :class="[
+                'content-view__proof-code-line',
+                { 'is-live': traceRunning && line.includes(pageContent.proof.transition) },
+              ]"
             >{{ line || ' ' }}</span></code></pre>
           </article>
 
-          <div class="content-view__proof-connector" aria-hidden="true">
+          <div
+            :class="['content-view__proof-connector', { 'is-live': traceRunning }]"
+            aria-hidden="true"
+          >
             <span>{{ pageContent.proof.transition }}</span>
           </div>
 
@@ -491,16 +700,22 @@ onBeforeUnmount(() => {
               </span>
             </header>
             <pre
+              ref="traceOutput"
               class="content-view__proof-code content-view__proof-code--trace"
               tabindex="0"
             ><code><span class="content-view__proof-trace-command">{{ pageContent.proof.trace.command }}</span><span
-              v-for="line in pageContent.proof.trace.lines"
+              v-for="(line, index) in pageContent.proof.trace.lines"
               :key="line.text"
               :class="[
                 'content-view__proof-code-line',
-                `content-view__proof-code-line--${line.tone}`,
+                'content-view__proof-code-line--' + line.tone,
+                { 'is-pending': traceRevealed >= 0 && index >= traceRevealed },
               ]"
-            >{{ line.text }}</span></code></pre>
+            >{{ line.text }}</span><span
+              v-if="traceAwaiting"
+              class="content-view__proof-trace-cursor"
+              aria-hidden="true"
+            ></span></code></pre>
           </article>
         </div>
 
@@ -523,8 +738,8 @@ onBeforeUnmount(() => {
             <div class="content-view__proof-action-list">
               <BaseActionLink
                 v-for="(action, index) in pageContent.proof.actions"
-                :key="action.href"
-                :href="action.href"
+                :key="action.link"
+                :href="siteLink(action.link)"
                 :variant="index === 0 ? 'primary' : 'secondary'"
                 external
               >
@@ -537,272 +752,167 @@ onBeforeUnmount(() => {
     </section>
 
     <section
-      id="model"
-      class="content-view__model"
-      aria-labelledby="model-title"
+      id="fit"
+      class="content-view__fit"
+      aria-labelledby="fit-title"
       data-chrome-theme="light"
     >
-      <BaseContainer class="content-view__model-inner">
-        <header class="content-view__model-intro">
+      <BaseContainer class="content-view__fit-inner">
+        <header class="content-view__fit-intro">
           <BaseText
             as="p"
             size="caption"
             tone="subtle"
-            class="content-view__model-eyebrow"
+            class="content-view__fit-eyebrow"
           >
-            {{ pageContent.model.eyebrow }}
+            {{ pageContent.fit.eyebrow }}
           </BaseText>
           <BaseHeading
-            id="model-title"
+            id="fit-title"
             as="h2"
             size="h1"
-            class="content-view__model-title"
+            class="content-view__fit-title"
           >
-            {{ pageContent.model.title }}
+            {{ pageContent.fit.title }}
           </BaseHeading>
-          <BaseText tone="muted" class="content-view__model-lede">
-            {{ pageContent.model.lede }}
+          <BaseText tone="muted" class="content-view__fit-lede">
+            {{ pageContent.fit.lede }}
           </BaseText>
         </header>
 
-        <figure class="content-view__model-map">
-          <div class="content-view__model-diagram">
-            <p class="content-view__model-signal content-view__model-signal--desired">
-              <span class="content-view__model-signal-copy">
-                <strong>{{ pageContent.model.signals.desired }}</strong>
-                <span>{{ pageContent.model.signals.desiredDetail }}</span>
-                <span class="u-visually-hidden">
-                  {{ pageContent.model.signals.desiredDirection }}
-                </span>
-              </span>
-              <span class="content-view__model-signal-line" aria-hidden="true"></span>
-            </p>
-
-            <ol class="content-view__model-stages">
-              <li class="content-view__model-stage content-view__model-stage--system">
-                <header class="content-view__model-stage-copy">
-                  <p class="content-view__model-stage-meta">
-                    {{ pageContent.model.boundaries.system.scope }}
-                  </p>
-                  <div class="content-view__model-stage-context">
-                    <BaseText
-                      as="p"
-                      size="small"
-                      tone="subtle"
-                      class="content-view__model-stage-product"
-                    >
-                      {{ pageContent.model.boundaries.system.product }}
-                    </BaseText>
-                    <span class="content-view__model-stage-adoption">
-                      {{ pageContent.model.boundaries.system.adoption }}
-                    </span>
-                  </div>
-                  <BaseHeading
-                    id="model-system-title"
-                    as="h3"
-                    size="h2"
-                    class="content-view__model-stage-title"
-                  >
-                    {{ pageContent.model.boundaries.system.title }}
-                  </BaseHeading>
-                </header>
-                <ul class="content-view__model-responsibilities">
-                  <li
-                    v-for="item in pageContent.model.boundaries.system.responsibilities"
-                    :key="item"
-                  >
-                    {{ item }}
-                  </li>
-                </ul>
-              </li>
-
-              <li class="content-view__model-stage content-view__model-stage--agent">
-                <header class="content-view__model-stage-copy">
-                  <p class="content-view__model-stage-meta">
-                    {{ pageContent.model.boundaries.agent.scope }}
-                  </p>
-                  <div class="content-view__model-stage-context">
-                    <BaseText
-                      as="p"
-                      size="small"
-                      tone="subtle"
-                      class="content-view__model-stage-product"
-                    >
-                      {{ pageContent.model.boundaries.agent.product }}
-                    </BaseText>
-                    <span class="content-view__model-stage-adoption">
-                      {{ pageContent.model.boundaries.agent.adoption }}
-                    </span>
-                  </div>
-                  <BaseHeading
-                    id="model-agent-title"
-                    as="h3"
-                    size="h2"
-                    class="content-view__model-stage-title"
-                  >
-                    {{ pageContent.model.boundaries.agent.title }}
-                  </BaseHeading>
-                </header>
-                <ul class="content-view__model-responsibilities">
-                  <li
-                    v-for="item in pageContent.model.boundaries.agent.responsibilities"
-                    :key="item"
-                  >
-                    {{ item }}
-                  </li>
-                </ul>
-              </li>
-
-              <li class="content-view__model-stage content-view__model-stage--process">
-                <header class="content-view__model-stage-copy">
-                  <p class="content-view__model-stage-meta">
-                    {{ pageContent.model.boundaries.process.scope }}
-                  </p>
-                  <div class="content-view__model-stage-context">
-                    <BaseText
-                      as="p"
-                      size="small"
-                      tone="subtle"
-                      class="content-view__model-stage-product"
-                    >
-                      {{ pageContent.model.boundaries.process.product }}
-                    </BaseText>
-                    <span class="content-view__model-stage-adoption">
-                      {{ pageContent.model.boundaries.process.adoption }}
-                    </span>
-                  </div>
-                  <BaseHeading
-                    id="model-process-title"
-                    as="h3"
-                    size="h2"
-                    class="content-view__model-stage-title"
-                  >
-                    {{ pageContent.model.boundaries.process.title }}
-                  </BaseHeading>
-                </header>
-                <ul class="content-view__model-responsibilities">
-                  <li
-                    v-for="item in pageContent.model.boundaries.process.responsibilities"
-                    :key="item"
-                  >
-                    {{ item }}
-                  </li>
-                </ul>
-              </li>
-
-              <li class="content-view__model-stage content-view__model-stage--workload">
-                <header class="content-view__model-stage-copy">
-                  <p class="content-view__model-stage-meta">
-                    {{ pageContent.model.workload.scope }}
-                  </p>
-                  <BaseHeading
-                    id="model-workload-title"
-                    as="h3"
-                    size="h2"
-                    class="content-view__model-stage-title"
-                  >
-                    {{ pageContent.model.workload.title }}
-                  </BaseHeading>
-                </header>
-                <ul class="content-view__model-responsibilities">
-                  <li
-                    v-for="item in pageContent.model.workload.options"
-                    :key="item"
-                  >
-                    {{ item }}
-                  </li>
-                </ul>
-              </li>
-            </ol>
-
-            <p class="content-view__model-signal content-view__model-signal--evidence">
-              <span class="content-view__model-signal-line" aria-hidden="true"></span>
-              <span class="content-view__model-signal-copy">
-                <strong>{{ pageContent.model.signals.evidence }}</strong>
-                <span>{{ pageContent.model.signals.evidenceDetail }}</span>
-                <span class="u-visually-hidden">
-                  {{ pageContent.model.signals.evidenceDirection }}
-                </span>
-              </span>
-            </p>
-          </div>
-
-        </figure>
-
-        <div class="content-view__model-outro">
-          <aside
-            class="content-view__model-commons"
-            aria-labelledby="model-commons-title"
+        <ul
+          ref="fitChoices"
+          class="content-view__fit-choices"
+          role="list"
+          :class="{ 'content-view__fit-choices--revealed': fitChoicesVisible }"
+        >
+          <li
+            v-for="(choice, index) in fitCards"
+            :key="choice.title"
+            :class="[
+              'content-view__fit-choice',
+              'content-view__fit-choice--' + choice.tone,
+            ]"
+            :style="{ '--reveal-index': index }"
           >
             <BaseText
               as="p"
               size="caption"
               tone="subtle"
-              class="content-view__model-commons-eyebrow"
+              class="content-view__fit-choice-label"
             >
-              {{ pageContent.model.commons.eyebrow }}
+              {{ choice.label }}
             </BaseText>
-            <div class="content-view__model-commons-copy">
-              <BaseHeading
-                id="model-commons-title"
-                as="h3"
-                size="h3"
-                class="content-view__model-commons-title"
-              >
-                {{ pageContent.model.commons.title }}
-              </BaseHeading>
-              <BaseText tone="muted" class="content-view__model-commons-body">
-                {{ pageContent.model.commons.body }}
-              </BaseText>
-            </div>
+            <BaseHeading as="h3" size="h2" class="content-view__fit-choice-title">
+              {{ choice.title }}
+            </BaseHeading>
+            <BaseText tone="muted" class="content-view__fit-choice-body">
+              {{ choice.body }}
+            </BaseText>
+            <ul class="content-view__fit-choice-items" role="list">
+              <li v-for="item in choice.items" :key="item.need">
+                <span
+                  >{{ item.need }}<span
+                    v-if="item.answer"
+                    class="content-view__fit-choice-item-answer"
+                  >
+                    → {{ item.answer }}</span
+                  ></span
+                >
+              </li>
+            </ul>
+            <BaseText
+              as="p"
+              size="small"
+              tone="subtle"
+              class="content-view__fit-choice-boundary"
+            >
+              {{ choice.boundary }}
+            </BaseText>
+          </li>
+        </ul>
+      </BaseContainer>
+    </section>
+
+    <section
+      id="community"
+      class="content-view__community"
+      :aria-label="pageContent.community.label"
+      data-chrome-theme="light"
+    >
+      <BaseContainer class="content-view__community-inner">
+        <section
+          class="content-view__community-commons"
+          aria-labelledby="community-commons-title"
+        >
+          <BaseText
+            as="p"
+            size="caption"
+            tone="subtle"
+            class="content-view__community-commons-eyebrow"
+          >
+            {{ pageContent.community.commons.eyebrow }}
+          </BaseText>
+          <div class="content-view__community-commons-copy">
+            <BaseHeading
+              id="community-commons-title"
+              as="h2"
+              size="h3"
+              class="content-view__community-commons-title"
+            >
+              {{ pageContent.community.commons.title }}
+            </BaseHeading>
+            <BaseText tone="muted" class="content-view__community-commons-body">
+              {{ pageContent.community.commons.body }}
+            </BaseText>
+          </div>
+          <BaseActionLink
+            :href="siteContent.links.agentOverview"
+            variant="secondary"
+            external
+          >
+            {{ pageContent.community.commons.action }}
+          </BaseActionLink>
+        </section>
+
+        <section
+          class="content-view__community-open-source"
+          aria-labelledby="community-open-source-title"
+        >
+          <div class="content-view__community-open-source-copy">
+            <BaseText
+              as="p"
+              size="caption"
+              tone="subtle"
+              class="content-view__community-open-source-eyebrow"
+            >
+              {{ pageContent.community.openSource.eyebrow }}
+            </BaseText>
+            <BaseHeading
+              id="community-open-source-title"
+              as="h2"
+              size="h1"
+              class="content-view__community-open-source-title"
+            >
+              {{ pageContent.community.openSource.title }}
+            </BaseHeading>
+            <BaseText tone="muted" class="content-view__community-open-source-body">
+              {{ pageContent.community.openSource.body }}
+            </BaseText>
+          </div>
+          <div class="content-view__community-open-source-actions">
+            <BaseActionLink :href="siteContent.links.github" variant="primary" external>
+              {{ pageContent.community.openSource.action }}
+            </BaseActionLink>
             <BaseActionLink
-              :href="siteContent.links.agentOverview"
+              :href="siteContent.links.contributing"
               variant="secondary"
               external
             >
-              {{ pageContent.model.commons.action }}
+              {{ pageContent.community.openSource.contributeAction }}
             </BaseActionLink>
-          </aside>
-
-          <aside
-            class="content-view__model-open-source"
-            aria-labelledby="model-open-source-title"
-          >
-            <div class="content-view__model-open-source-copy">
-              <BaseText
-                as="p"
-                size="caption"
-                tone="subtle"
-                class="content-view__model-open-source-eyebrow"
-              >
-                {{ pageContent.model.openSource.eyebrow }}
-              </BaseText>
-              <BaseHeading
-                id="model-open-source-title"
-                as="h3"
-                size="h2"
-                class="content-view__model-open-source-title"
-              >
-                {{ pageContent.model.openSource.title }}
-              </BaseHeading>
-              <BaseText tone="muted" class="content-view__model-open-source-body">
-                {{ pageContent.model.openSource.body }}
-              </BaseText>
-            </div>
-            <div class="content-view__model-open-source-actions">
-              <BaseActionLink :href="siteContent.links.github" variant="primary" external>
-                {{ pageContent.model.openSource.action }}
-              </BaseActionLink>
-              <BaseActionLink
-                :href="siteContent.links.contributing"
-                variant="secondary"
-                external
-              >
-                {{ pageContent.model.openSource.contributeAction }}
-              </BaseActionLink>
-            </div>
-          </aside>
-        </div>
+          </div>
+        </section>
       </BaseContainer>
     </section>
   </BaseView>
