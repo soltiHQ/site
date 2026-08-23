@@ -302,14 +302,19 @@ onBeforeUnmount(() => {
           tabindex="-1"
         >
           <source
+            :data-src="heroMediaUrl(heroMedia.video.large.webm)"
+            type='video/webm; codecs="av01.0.12M.08"'
+            media="(prefers-reduced-motion: no-preference) and (min-width: 1920px)"
+          />
+          <source
             :data-src="heroMediaUrl(heroMedia.video.large.mp4)"
             type="video/mp4"
             media="(prefers-reduced-motion: no-preference) and (min-width: 1920px)"
           />
           <source
-            :data-src="heroMediaUrl(heroMedia.video.large.webm)"
-            type="video/webm"
-            media="(prefers-reduced-motion: no-preference) and (min-width: 1920px)"
+            :data-src="heroMediaUrl(heroMedia.video.standard.webm)"
+            type='video/webm; codecs="av01.0.08M.08"'
+            media="(prefers-reduced-motion: no-preference) and (min-width: 768px)"
           />
           <source
             :data-src="heroMediaUrl(heroMedia.video.standard.mp4)"
@@ -317,18 +322,13 @@ onBeforeUnmount(() => {
             media="(prefers-reduced-motion: no-preference) and (min-width: 768px)"
           />
           <source
-            :data-src="heroMediaUrl(heroMedia.video.standard.webm)"
-            type="video/webm"
-            media="(prefers-reduced-motion: no-preference) and (min-width: 768px)"
+            :data-src="heroMediaUrl(heroMedia.video.mobile.webm)"
+            type='video/webm; codecs="av01.0.08M.08"'
+            media="(prefers-reduced-motion: no-preference)"
           />
           <source
             :data-src="heroMediaUrl(heroMedia.video.mobile.mp4)"
             type="video/mp4"
-            media="(prefers-reduced-motion: no-preference)"
-          />
-          <source
-            :data-src="heroMediaUrl(heroMedia.video.mobile.webm)"
-            type="video/webm"
             media="(prefers-reduced-motion: no-preference)"
           />
         </video>

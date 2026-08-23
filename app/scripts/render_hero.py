@@ -134,9 +134,9 @@ RENDER_STYLES = (
 )
 
 VIDEO_TIERS = (
-    VideoTier("", (2880, 1800), 20, (2560, 1600), 17, "5.1"),
-    VideoTier("-standard", (1920, 1200), 22, (1920, 1200), 19, "5.0"),
-    VideoTier("-mobile", (1440, 900), 24, (1440, 900), 21, "4.0"),
+    VideoTier("", (2560, 1600), 32, (2560, 1600), 17, "5.1"),
+    VideoTier("-standard", (1920, 1200), 36, (1920, 1200), 19, "5.0"),
+    VideoTier("-mobile", (1440, 900), 42, (1440, 900), 21, "4.0"),
 )
 
 LAYER_FLOW = (
@@ -674,13 +674,13 @@ def encode_animation(
     split_labels: list[str] = []
     scale_filters: list[str] = []
     for index, tier in enumerate(VIDEO_TIERS):
-        split_labels.extend((f"[vp9src{index}]", f"[h264src{index}]"))
+        split_labels.extend((f"[av1src{index}]", f"[h264src{index}]"))
         scale_filters.extend(
             (
                 (
-                    f"[vp9src{index}]scale={tier.webm_size[0]}:{tier.webm_size[1]}:"
+                    f"[av1src{index}]scale={tier.webm_size[0]}:{tier.webm_size[1]}:"
                     "flags=lanczos+accurate_rnd+full_chroma_int,"
-                    f"format=yuv420p[vp9{index}]"
+                    f"format=yuv420p[av1{index}]"
                 ),
                 (
                     f"[h264src{index}]scale={tier.mp4_size[0]}:{tier.mp4_size[1]}:"
@@ -720,40 +720,16 @@ def encode_animation(
         output_paths.extend((webm_path, mp4_path))
         command += (
             "-map",
-            f"[vp9{index}]",
+            f"[av1{index}]",
             "-an",
             "-c:v",
-            "libvpx-vp9",
-            "-profile:v",
-            "0",
-            "-pix_fmt",
-            "yuv420p",
+            "libsvtav1",
+            "-preset",
+            "4",
             "-crf",
             str(tier.webm_crf),
-            "-b:v",
-            "0",
-            "-deadline",
-            "good",
-            "-cpu-used",
-            "2",
-            "-tune-content",
-            "screen",
-            "-aq-mode",
-            "1",
-            "-row-mt",
-            "1",
-            "-tile-columns",
-            "2",
-            "-tile-rows",
-            "1",
-            "-frame-parallel",
-            "1",
-            "-lag-in-frames",
-            "25",
-            "-sharpness",
-            "0",
-            "-threads",
-            "12",
+            "-pix_fmt",
+            "yuv420p",
             "-g",
             str(FRAME_COUNT),
             "-color_range",
@@ -773,7 +749,7 @@ def encode_animation(
             "-crf",
             str(tier.mp4_crf),
             "-preset",
-            "slow",
+            "veryslow",
             "-tune",
             "animation",
             "-profile:v",

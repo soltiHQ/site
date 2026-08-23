@@ -37,7 +37,7 @@
   },
   "media": {
     "hero": {
-      "version": "20260817a",
+      "version": "20260823a",
       "poster": "/media/hero-conductor-static-shadow-000.avif",
       "conductor": "/media/hero-conductor-static.webp",
       "video": {
