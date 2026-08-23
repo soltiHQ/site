@@ -36,6 +36,17 @@ const stackOutroVisible = ref(false)
 const stackList = ref<HTMLElement | null>(null)
 const stackListVisible = ref(false)
 const fitChoices = ref<HTMLElement | null>(null)
+const fitCards = computed(() =>
+  pageContent.fit.choices.map((choice) => ({
+    ...choice,
+    items: choice.items.map((item) => {
+      const at = item.lastIndexOf('→')
+      return at === -1
+        ? { need: item, answer: '' }
+        : { need: item.slice(0, at).trim(), answer: item.slice(at + 1).trim() }
+    }),
+  })),
+)
 const fitChoicesVisible = ref(false)
 const pageContent = siteContent.pages.content
 const heroMedia = siteContent.media.hero
@@ -769,24 +780,57 @@ onBeforeUnmount(() => {
           </BaseText>
         </header>
 
-        <dl
+        <ul
           ref="fitChoices"
           class="content-view__fit-choices"
+          role="list"
           :class="{ 'content-view__fit-choices--revealed': fitChoicesVisible }"
         >
-          <div
-            v-for="(choice, index) in pageContent.fit.choices"
-            :key="choice.need"
+          <li
+            v-for="(choice, index) in fitCards"
+            :key="choice.title"
             :class="[
               'content-view__fit-choice',
-              { 'content-view__fit-choice--solti': choice.featured },
+              'content-view__fit-choice--' + choice.tone,
             ]"
-            :style="{ '--reveal-index': choice.featured ? index + 1 : index }"
+            :style="{ '--reveal-index': index }"
           >
-            <dt>{{ choice.need }}</dt>
-            <dd>{{ choice.answer }}</dd>
-          </div>
-        </dl>
+            <BaseText
+              as="p"
+              size="caption"
+              tone="subtle"
+              class="content-view__fit-choice-label"
+            >
+              {{ choice.label }}
+            </BaseText>
+            <BaseHeading as="h3" size="h2" class="content-view__fit-choice-title">
+              {{ choice.title }}
+            </BaseHeading>
+            <BaseText tone="muted" class="content-view__fit-choice-body">
+              {{ choice.body }}
+            </BaseText>
+            <ul class="content-view__fit-choice-items" role="list">
+              <li v-for="item in choice.items" :key="item.need">
+                <span
+                  >{{ item.need }}<span
+                    v-if="item.answer"
+                    class="content-view__fit-choice-item-answer"
+                  >
+                    → {{ item.answer }}</span
+                  ></span
+                >
+              </li>
+            </ul>
+            <BaseText
+              as="p"
+              size="small"
+              tone="subtle"
+              class="content-view__fit-choice-boundary"
+            >
+              {{ choice.boundary }}
+            </BaseText>
+          </li>
+        </ul>
       </BaseContainer>
     </section>
 

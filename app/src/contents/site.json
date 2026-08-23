@@ -308,27 +308,46 @@
       "fit": {
         "eyebrow": "Know the boundary",
         "title": "Use the smallest thing that fits.",
-        "lede": "Solti provides components for building the system. Your product defines the final host, agent, or control plane.",
+        "lede": "Use Solti when task execution is part of the product you are building. Use less when it is not; use a finished platform when you do not want to build that layer.",
         "choices": [
           {
-            "featured": false,
-            "need": "One retried future or a fixed worker set",
-            "answer": "Tokio primitives and a focused retry helper may be enough."
+            "tone": "smaller",
+            "label": "Use local primitives",
+            "title": "You do not need a Task system.",
+            "body": "A future or fixed worker set needs no versioned resource, reconciliation, runtime status, or workload routing.",
+            "items": [
+              "Retry one future → a focused retry helper",
+              "Cancel related futures → CancellationToken",
+              "Join a fixed task set → JoinSet",
+              "Run one command on a schedule → cron or a service manager"
+            ],
+            "boundary": "Move to Taskvisor when work needs its own identity, lifecycle policy, runtime control, or final outcome."
           },
           {
-            "featured": false,
-            "need": "Conditional multi-step execution",
-            "answer": "Solti Chain runs an acyclic sequence with success and failure branches inside one Task attempt. It does not persist step progress or resume after a process crash."
+            "tone": "solti",
+            "label": "Build with Solti",
+            "title": "Task execution is part of your product.",
+            "body": "Use Solti when your product defines what runs, selects the process, host, or agents, and needs one Task contract from desired state to observed outcome.",
+            "items": [
+              "Lifecycle inside one Rust process → Taskvisor",
+              "Versioned workloads and agent APIs → SDK",
+              "Desired state that must outlive an agent → a persistent control plane",
+              "Process and container isolation → cgroups, namespaces, seccomp, capabilities, or containerd",
+              "Deploy → verify → rollback → Solti Chain"
+            ],
+            "boundary": "Your product owns the workload contract, targeting policy, deployment, and final security boundary. A control plane re-applies desired state after agent loss; Chain does not resume from a persisted step."
           },
           {
-            "featured": false,
-            "need": "Host or fleet workload control",
-            "answer": "Build it with Solti when your application selects the target agents. Use Kubernetes or Nomad when you need built-in resource placement, bin packing, networking, or storage orchestration."
-          },
-          {
-            "featured": true,
-            "need": "Application-owned execution across one process, host, or selected agents",
-            "answer": "Build it with Solti."
+            "tone": "other",
+            "label": "Use a finished platform",
+            "title": "You do not want to build this layer.",
+            "body": "Choose a complete product when its operating model-not composable execution components is what you need.",
+            "items": [
+              "Persisted workflow replay, step resume, or durable timers → a workflow engine",
+              "Workloads are untrusted or need strict tenant isolation → a dedicated sandbox",
+              "Ready-made cluster scheduling, service networking, and storage orchestration → Kubernetes, Nomad, or another platform"
+            ],
+            "boundary": "This is a build-or-adopt decision. Solti can still provide Task supervision, agents, runners, and isolation inside that architecture."
           }
         ]
       },
