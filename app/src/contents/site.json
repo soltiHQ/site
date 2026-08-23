@@ -1,10 +1,10 @@
 {
   "meta": {
     "url": "https://solti.io/",
-    "title": "Solti: Open-source task execution stack",
-    "description": "Build task-execution systems from composable open-source components for supervision, reconciliation, workload routing, agent APIs, discovery, and operations.",
-    "image": "https://solti.io/social/solti-preview.png",
-    "imageAlt": "Solti task execution stack with an engraved conductor and three flowing execution layers"
+    "title": "Solti — Modular task-execution stack",
+    "description": "An open-source path from in-process task supervision to composable Rust agents and evolving central coordination with Taskvisor, Solti SDK, and Podium.",
+    "imageUrl": "https://solti.io/og.png",
+    "imageAlt": "Solti Compose systems social preview with an engraved conductor and flowing system lines."
   },
   "brand": {
     "name": "Solti",
@@ -305,23 +305,29 @@
           }
         ]
       },
-      "fit": {
-        "eyebrow": "Know the boundary",
-        "title": "Use the smallest thing that fits.",
-        "lede": "Use Solti when task execution is part of the product you are building. Use less when it is not; use a finished platform when you do not want to build that layer.",
-        "choices": [
-          {
-            "tone": "smaller",
-            "label": "Use local primitives",
-            "title": "You do not need a Task system.",
-            "body": "A future or fixed worker set needs no versioned resource, reconciliation, runtime status, or workload routing.",
-            "items": [
-              "Retry one future → a focused retry helper",
-              "Cancel related futures → CancellationToken",
-              "Join a fixed task set → JoinSet",
-              "Run one command on a schedule → cron or a service manager"
-            ],
-            "boundary": "Move to Taskvisor when work needs its own identity, lifecycle policy, runtime control, or final outcome."
+      "model": {
+        "eyebrow": "The Solti idea",
+        "title": "The workload is not the system.",
+        "lede": "You define what should run. Solti keeps execution, supervision, reconciliation, and coordination as separate contracts, so you can start in-process and add the next boundary only when you need it.",
+        "signals": {
+          "desired": "Desired state",
+          "desiredDetail": "TaskManifest",
+          "desiredDirection": "Moves through the boundaries toward execution.",
+          "evidence": "Runtime evidence",
+          "evidenceDetail": "Task status · live output · bounded run history",
+          "evidenceDirection": "Returns through the boundaries toward coordination."
+        },
+        "boundaries": {
+          "system": {
+            "scope": "System boundary",
+            "product": "Podium",
+            "adoption": "Agent contract aligning with the SDK",
+            "title": "Coordinate",
+            "responsibilities": [
+              "Agents",
+              "API version",
+              "Desired spec"
+            ]
           },
           {
             "tone": "solti",
@@ -349,10 +355,16 @@
             ],
             "boundary": "This is a build-or-adopt decision. Solti can still provide Task supervision, agents, runners, and isolation inside that architecture."
           }
-        ]
-      },
-      "community": {
-        "label": "Solti open source community",
+        },
+        "workload": {
+          "scope": "Workload",
+          "title": "Execute",
+          "options": [
+            "Subprocess",
+            "containerd · Linux only",
+            "Your runner"
+          ]
+        },
         "commons": {
           "eyebrow": "Operational commons",
           "title": "See the runtime as a system.",
