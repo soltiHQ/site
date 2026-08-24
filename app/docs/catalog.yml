@@ -8,3 +8,9 @@ products:
     description: In-process supervision for asynchronous Rust work.
     repository: soltiHQ/taskvisor
     default_branch: main
+
+  - id: contracts
+    title: Solti API Contracts
+    description: Protobuf contracts for task management, agent discovery, and runner capabilities.
+    repository: soltiHQ/proto
+    default_branch: main
