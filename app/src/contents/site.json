@@ -11,6 +11,7 @@
     "wordmark": "solti"
   },
   "links": {
+    "docs": "/docs/",
     "github": "https://github.com/soltiHQ",
     "contributing": "https://github.com/soltiHQ/.github/blob/main/CONTRIBUTING.md",
     "agentOverview": "https://github.com/soltiHQ/dashboards/tree/main/solti/agent-overview",
@@ -28,9 +29,12 @@
     "skipToContent": "Skip to content",
     "home": "Solti home",
     "primaryNavigation": "Primary navigation",
+    "openNavigation": "Open navigation",
+    "closeNavigation": "Close navigation",
     "footerNavigation": "Footer navigation"
   },
   "actions": {
+    "docs": "Docs",
     "source": "Source ↗",
     "top": "Top ↑",
     "explore": "Solti on GitHub ↗"

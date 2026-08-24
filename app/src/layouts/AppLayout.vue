@@ -12,7 +12,11 @@ providePageChrome()
     {{ siteContent.accessibility.skipToContent }}
   </a>
   <span data-chrome-top-sentinel aria-hidden="true"></span>
-  <SiteHeader />
+  <SiteHeader>
+    <template #navigation>
+      <a :href="siteContent.links.docs">{{ siteContent.actions.docs }}</a>
+    </template>
+  </SiteHeader>
   <RouterView />
   <SiteFooter />
 </template>
