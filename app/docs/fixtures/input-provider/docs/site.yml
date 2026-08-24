@@ -7,7 +7,26 @@ repository: https://github.com/soltiHQ/site
 version:
   provider: input
 
+reference:
+  label: API reference
+  url: https://docs.rs/renderer-fixture/{version}/renderer_fixture/
+
+api:
+  provider: rustdoc
+  source: api.json
+  title: Public API
+  description: Browse the fixture API and open its exact reference pages.
+
+examples:
+  provider: rust
+  catalog: examples/README.md
+  directory: examples
+  title: Renderer examples
+  description: Choose a complete runnable renderer fixture.
+
 navigation:
   - title: Start
     pages:
       - index
+      - examples
+      - api

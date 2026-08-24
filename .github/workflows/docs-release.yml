@@ -177,9 +177,19 @@ jobs:
         run: |
           set -euo pipefail
           test -f "$DOCS_ROOT/$PRODUCT/index.html"
+          test -f "$DOCS_ROOT/$PRODUCT/latest/index.html"
           test -f "$DOCS_ROOT/$PRODUCT/$LINE/index.html"
           test -f "$DOCS_ROOT/$PRODUCT/$LINE/sitemap.xml"
           test -d "$DOCS_ROOT/$PRODUCT/$LINE/assets"
+
+          if grep -q '^api:$' "$GITHUB_WORKSPACE/.docs-product/docs/site.yml"; then
+            test -f "$DOCS_ROOT/$PRODUCT/$LINE/api.html"
+            test -f "$DOCS_ROOT/$PRODUCT/$LINE/api.json"
+          fi
+          if grep -q '^examples:$' "$GITHUB_WORKSPACE/.docs-product/docs/site.yml"; then
+            test -f "$DOCS_ROOT/$PRODUCT/$LINE/examples.html"
+            test -d "$DOCS_ROOT/$PRODUCT/$LINE/examples"
+          fi
 
       - name: Resolve artifact name
         id: artifact
@@ -240,6 +250,9 @@ jobs:
               "/docs/$PRODUCT/" \
               "/docs/$PRODUCT/index.html" \
               "/docs/$PRODUCT/sitemap.xml" \
+              "/docs/$PRODUCT/latest" \
+              "/docs/$PRODUCT/latest/" \
+              "/docs/$PRODUCT/latest/index.html" \
               "/docs/$PRODUCT/$LINE" \
               "/docs/$PRODUCT/$LINE/" \
               "/docs/$PRODUCT/$LINE/*" \

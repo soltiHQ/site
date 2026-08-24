@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "product": "renderer-fixture",
+  "package": "renderer-fixture",
+  "version": "0.1.0",
+  "reference": "https://docs.rs/renderer-fixture/0.1.0/renderer_fixture/",
+  "features": "all",
+  "items": [
+    {
+      "path": "renderer_fixture",
+      "kind": "module",
+      "url": "https://docs.rs/renderer-fixture/0.1.0/renderer_fixture/"
+    },
+    {
+      "path": "renderer_fixture::Example",
+      "kind": "struct",
+      "url": "https://docs.rs/renderer-fixture/0.1.0/renderer_fixture/struct.Example.html"
+    },
+    {
+      "path": "renderer_fixture::core::Nested",
+      "kind": "struct",
+      "url": "https://docs.rs/renderer-fixture/0.1.0/renderer_fixture/core/struct.Nested.html"
+    }
+  ]
+}

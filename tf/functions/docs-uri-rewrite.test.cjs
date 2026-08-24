@@ -15,6 +15,8 @@ const cases = new Map([
   ['/docs/', '/docs/index.html'],
   ['/docs/taskvisor', '/docs/taskvisor/index.html'],
   ['/docs/taskvisor/', '/docs/taskvisor/index.html'],
+  ['/docs/taskvisor/latest', '/docs/taskvisor/latest/index.html'],
+  ['/docs/taskvisor/latest/', '/docs/taskvisor/latest/index.html'],
   ['/docs/taskvisor/0.8', '/docs/taskvisor/0.8/index.html'],
   ['/docs/taskvisor/0.8/', '/docs/taskvisor/0.8/index.html'],
   ['/docs/taskvisor/0.8/installation', '/docs/taskvisor/0.8/installation.html'],
