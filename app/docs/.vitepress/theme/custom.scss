@@ -1,0 +1,121 @@
+:root {
+  --vp-c-bg: #ffffff;
+  --vp-c-bg-alt: color-mix(in srgb, #ffffff 94%, #d8dee6);
+  --vp-c-bg-elv: #ffffff;
+  --vp-c-bg-soft: color-mix(in srgb, #ffffff 90%, #d8dee6);
+  --vp-c-text-1: #141a21;
+  --vp-c-text-2: #3a424d;
+  --vp-c-text-3: #6b7684;
+  --vp-c-divider: #d8dee6;
+  --vp-c-gutter: #e6edf3;
+  --vp-c-brand-1: #24713f;
+  --vp-c-brand-2: #2f9e58;
+  --vp-c-brand-3: #3fb950;
+  --vp-c-brand-soft: color-mix(in srgb, #2f9e58 13%, transparent);
+  --vp-button-brand-bg: #24713f;
+  --vp-button-brand-hover-bg: #141a21;
+  --vp-button-brand-active-bg: #0d1117;
+  --vp-button-brand-text: #ffffff;
+  --vp-font-family-base: 'IBM Plex Sans', system-ui, sans-serif;
+  --vp-font-family-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --vp-home-hero-name-color: #24713f;
+  --vp-home-hero-image-background-image: none;
+  --vp-home-hero-image-filter: none;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  letter-spacing: 0;
+}
+
+.VPNavBarTitle .title,
+.VPNavBarMenuLink,
+.VPNavBarMenuGroup .button,
+.VPSidebarItem .text,
+.VPDocOutlineItem .outline-link,
+.VPFooter,
+.VPButton {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+.VPNavBarTitle .title,
+.VPNavBarMenuLink,
+.VPNavBarMenuGroup .button {
+  letter-spacing: 0.04em;
+}
+
+.VPNavBarTitle .logo {
+  width: 2rem;
+  height: 2rem;
+}
+
+.VPDoc h1,
+.VPDoc h2,
+.VPDoc h3,
+.VPHome .name,
+.VPHome .text,
+.VPFeature .title {
+  font-family: 'IBM Plex Serif', Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.VPDoc h1 {
+  font-size: clamp(2.25rem, 5vw, 3.75rem);
+  line-height: 1.02;
+}
+
+.docs-version {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  color: #6b7684;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.docs-version a {
+  color: #24713f;
+  text-decoration: none;
+}
+
+.docs-version a:hover {
+  color: #141a21;
+}
+
+.VPDoc h2 {
+  border-top-color: #d8dee6;
+}
+
+.VPDoc a {
+  text-underline-offset: 0.2em;
+}
+
+.VPDoc table {
+  display: table;
+  width: 100%;
+}
+
+.VPFeature {
+  border-color: #d8dee6;
+  border-top: 3px solid #2f9e58;
+  border-radius: 0.5rem;
+}
+
+.VPHomeHero .tagline {
+  max-width: 44rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

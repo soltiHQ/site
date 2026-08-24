@@ -6,6 +6,14 @@ resource "aws_cloudfront_origin_access_control" "site" {
   signing_protocol                  = "sigv4"
 }
 
+resource "aws_cloudfront_function" "docs_uri_rewrite" {
+  name    = "${local.policy_name_prefix}-docs-uri-v1"
+  comment = "Resolve clean documentation URLs to static S3 objects"
+  runtime = "cloudfront-js-2.0"
+  publish = true
+  code    = file("${path.module}/functions/docs-uri-rewrite.js")
+}
+
 resource "aws_cloudfront_cache_policy" "site" {
   name        = "${local.policy_name_prefix}-cache-v1"
   comment     = "Honor origin cache headers and include explicit media version queries"
@@ -118,6 +126,11 @@ resource "aws_cloudfront_distribution" "site" {
     response_headers_policy_id = aws_cloudfront_response_headers_policy.site.id
     target_origin_id           = local.cloudfront_origin_id
     viewer_protocol_policy     = "redirect-to-https"
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.docs_uri_rewrite.arn
+    }
   }
 
   custom_error_response {
