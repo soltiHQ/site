@@ -27,6 +27,7 @@ logs/
 # Site
 
 /.cache/
+/.task/
 /app/node_modules/
 /app/dist/
 /app/coverage/
@@ -37,6 +38,8 @@ logs/
 /app/*.tsbuildinfo
 /app/vite.config.js.timestamp-*
 /app/vite.config.ts.timestamp-*
+/app/docs/.generated/
+/app/docs/.vitepress/cache/
 
 # Terraform
 

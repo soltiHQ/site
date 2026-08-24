@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://solti.io/sitemap.xml
+Sitemap: https://solti.io/docs/sitemap.xml

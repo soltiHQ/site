@@ -8,7 +8,13 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "npm run type-check && vite build",
+    "build": "npm run type-check && vite build && npm run docs:catalog",
+    "docs:catalog": "node scripts/prepare-docs-catalog.mjs",
+    "docs:prepare": "node scripts/prepare-docs.mjs",
+    "docs:test": "node scripts/test-docs-renderer.mjs",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
     "type-check": "vue-tsc --build",
     "preview": "vite preview"
   },
@@ -25,6 +31,8 @@
     "sass": "1.89.2",
     "typescript": "5.8.3",
     "vite": "7.3.6",
-    "vue-tsc": "3.0.4"
+    "vitepress": "2.0.0-alpha.15",
+    "vue-tsc": "3.0.4",
+    "yaml": "2.9.0"
   }
 }

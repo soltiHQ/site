@@ -1,0 +1,10 @@
+schema: 1
+title: Solti documentation
+description: Versioned user guides for the open-source Solti task execution stack.
+
+products:
+  - id: taskvisor
+    title: Taskvisor
+    description: In-process supervision for asynchronous Rust work.
+    repository: soltiHQ/taskvisor
+    default_branch: main

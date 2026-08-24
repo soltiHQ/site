@@ -1,0 +1,250 @@
+name: Docs release
+run-name: Docs ${{ inputs.source-repository }} ${{ inputs.source-ref }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      source-repository:
+        description: Product repository in owner/name form.
+        type: string
+        required: true
+      source-ref:
+        description: Exact product release tag in v<version> form.
+        type: string
+        required: true
+      source-commit:
+        description: Exact lowercase 40-character product commit.
+        type: string
+        required: true
+      version:
+        description: Exact semantic version of the product release.
+        type: string
+        required: true
+      source-run-id:
+        description: Product workflow run that sent this release.
+        type: string
+        required: true
+
+concurrency:
+  group: site-production
+  queue: max
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    outputs:
+      artifact: ${{ steps.artifact.outputs.name }}
+      compatibility-line: ${{ steps.release.outputs.compatibility-line }}
+      product: ${{ steps.release.outputs.product }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - name: Checkout site renderer
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Configure Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22.23.1
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install site renderer dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Resolve allowlisted product release
+        id: release
+        working-directory: app
+        env:
+          SOURCE_COMMIT: ${{ inputs.source-commit }}
+          SOURCE_REF: ${{ inputs.source-ref }}
+          SOURCE_REPOSITORY: ${{ inputs.source-repository }}
+          SOURCE_RUN_ID: ${{ inputs.source-run-id }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_RUN_ID" =~ ^[0-9]+$ ]] || {
+            echo "::error::source-run-id must be numeric"
+            exit 1
+          }
+          node scripts/resolve-docs-release.mjs \
+            --repository "$SOURCE_REPOSITORY" \
+            --ref "$SOURCE_REF" \
+            --commit "$SOURCE_COMMIT" \
+            --version "$VERSION"
+
+      - name: Checkout exact product source
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ steps.release.outputs.repository }}
+          ref: ${{ steps.release.outputs.commit }}
+          path: .docs-product
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Verify exact product tag
+        working-directory: .docs-product
+        env:
+          DEFAULT_BRANCH: ${{ steps.release.outputs.default-branch }}
+          SOURCE_COMMIT: ${{ steps.release.outputs.commit }}
+          SOURCE_REF: ${{ steps.release.outputs.ref }}
+        run: |
+          set -euo pipefail
+
+          test "$(git rev-parse HEAD)" = "$SOURCE_COMMIT"
+          tag_commit=$(git rev-parse "refs/tags/$SOURCE_REF^{commit}")
+          test "$tag_commit" = "$SOURCE_COMMIT"
+
+          git fetch --no-tags origin \
+            "refs/heads/$DEFAULT_BRANCH:refs/remotes/origin/$DEFAULT_BRANCH"
+          git merge-base --is-ancestor "$SOURCE_COMMIT" "origin/$DEFAULT_BRANCH" || {
+            echo "::error::Release commit is not an ancestor of origin/$DEFAULT_BRANCH"
+            exit 1
+          }
+
+      - name: Run product documentation checks
+        uses: soltiHQ/actions/taskfile@v1
+        with:
+          dir: .docs-product
+          command: ci/docs
+
+      - name: Validate documentation contract
+        id: manifest
+        uses: soltiHQ/actions/docs-validate@v1
+        with:
+          manifest-path: .docs-product/docs/site.yml
+
+      - name: Verify documentation identity and version
+        env:
+          COMPATIBILITY_LINE: ${{ steps.release.outputs.compatibility-line }}
+          MANIFEST_LINE: ${{ steps.manifest.outputs.compatibility-line }}
+          MANIFEST_PRODUCT: ${{ steps.manifest.outputs.product }}
+          MANIFEST_REPOSITORY: ${{ steps.manifest.outputs.repository }}
+          PRODUCT: ${{ steps.release.outputs.product }}
+          SOURCE_REPOSITORY: ${{ steps.release.outputs.repository }}
+          VERSION: ${{ steps.release.outputs.version }}
+          VERSION_PACKAGE: ${{ steps.manifest.outputs.version-package }}
+          VERSION_PROVIDER: ${{ steps.manifest.outputs.version-provider }}
+        run: |
+          set -euo pipefail
+
+          test "$MANIFEST_PRODUCT" = "$PRODUCT"
+          test "$MANIFEST_LINE" = "$COMPATIBILITY_LINE"
+          test "$MANIFEST_REPOSITORY" = "https://github.com/$SOURCE_REPOSITORY"
+
+          if [[ "$VERSION_PROVIDER" == cargo ]]; then
+            package_version=$(cargo metadata \
+              --manifest-path .docs-product/Cargo.toml \
+              --no-deps \
+              --format-version 1 \
+              | jq -er --arg package "$VERSION_PACKAGE" '
+                  [.packages[] | select(.name == $package) | .version]
+                  | if length == 1 then .[0] else error("version package must match exactly one Cargo package") end
+                ')
+            test "$package_version" = "$VERSION"
+          fi
+
+      - name: Prepare exact documentation version
+        working-directory: app
+        env:
+          SOURCE_COMMIT: ${{ steps.release.outputs.commit }}
+          SOURCE_DIR: ${{ github.workspace }}/.docs-product
+          SOURCE_REF: ${{ steps.release.outputs.ref }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          set -euo pipefail
+          node scripts/prepare-docs.mjs \
+            --source "$SOURCE_DIR" \
+            --version "$VERSION" \
+            --ref "$SOURCE_REF" \
+            --commit "$SOURCE_COMMIT"
+
+      - name: Build exact documentation version
+        working-directory: app
+        run: npm run docs:build
+
+      - name: Verify rendered documentation
+        env:
+          DOCS_ROOT: ${{ github.workspace }}/app/dist/docs
+          LINE: ${{ steps.release.outputs.compatibility-line }}
+          PRODUCT: ${{ steps.release.outputs.product }}
+        run: |
+          set -euo pipefail
+          test -f "$DOCS_ROOT/$PRODUCT/index.html"
+          test -f "$DOCS_ROOT/$PRODUCT/$LINE/index.html"
+          test -f "$DOCS_ROOT/$PRODUCT/$LINE/sitemap.xml"
+          test -d "$DOCS_ROOT/$PRODUCT/$LINE/assets"
+
+      - name: Resolve artifact name
+        id: artifact
+        env:
+          PRODUCT: ${{ steps.release.outputs.product }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: echo "name=docs-$PRODUCT-$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Upload rendered documentation
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.artifact.outputs.name }}
+          path: app/dist/docs/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download rendered documentation
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ needs.build.outputs.artifact }}
+          path: ${{ runner.temp }}/docs-rendered
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_DOCS_DEPLOY_ROLE_ARN }}
+          role-session-name: solti-docs-${{ needs.build.outputs.product }}-${{ github.run_id }}
+
+      - name: Publish exact documentation version
+        uses: soltiHQ/actions/docs-publish@v1
+        with:
+          source-dir: ${{ runner.temp }}/docs-rendered
+          bucket: ${{ vars.SITE_BUCKET_NAME }}
+          prefix: docs
+          product: ${{ needs.build.outputs.product }}
+          version: ${{ needs.build.outputs.version }}
+          compatibility-line: ${{ needs.build.outputs.compatibility-line }}
+
+      - name: Invalidate mutable documentation paths
+        env:
+          DISTRIBUTION_ID: ${{ vars.SITE_CLOUDFRONT_DISTRIBUTION_ID }}
+          LINE: ${{ needs.build.outputs.compatibility-line }}
+          PRODUCT: ${{ needs.build.outputs.product }}
+        run: |
+          set -euo pipefail
+          invalidation=$(aws cloudfront create-invalidation \
+            --distribution-id "$DISTRIBUTION_ID" \
+            --paths \
+              "/docs/$PRODUCT" \
+              "/docs/$PRODUCT/" \
+              "/docs/$PRODUCT/index.html" \
+              "/docs/$PRODUCT/sitemap.xml" \
+              "/docs/$PRODUCT/$LINE" \
+              "/docs/$PRODUCT/$LINE/" \
+              "/docs/$PRODUCT/$LINE/*" \
+            --query Invalidation.Id \
+            --output text)
+          aws cloudfront wait invalidation-completed \
+            --distribution-id "$DISTRIBUTION_ID" \
+            --id "$invalidation"

@@ -18,11 +18,19 @@ tasks:
     desc: Build the production site.
     cmds:
       - task: node:build
+      - node --test tf/functions/docs-uri-rewrite.test.cjs
 
   ci/audit:
     desc: Audit production and development dependencies.
     cmds:
       - task: node:audit
+
+  ci/docs-renderer:
+    desc: Build the versioned documentation renderer against its generic fixture.
+    cmds:
+      - task: node:_npm/tool
+        vars:
+          CMD: "sh -c 'npm ci && npm run docs:test'"
 
   ci/terraform-fmt:
     desc: Check Terraform formatting.
@@ -50,7 +58,7 @@ tasks:
     requires:
       vars: [ SITE_BUCKET_NAME, CLOUDFRONT_DISTRIBUTION_ID ]
     cmds:
-      - task: aws:s3/publish
+      - task: aws:s3/publish-preserving-docs
         vars:
           SOURCE_DIR: app/dist
           BUCKET: '{{.SITE_BUCKET_NAME}}'

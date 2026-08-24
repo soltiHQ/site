@@ -16,3 +16,5 @@ jobs:
   ci:
     name: ci
     uses: soltiHQ/actions/.github/workflows/static-ci.yml@v1
+    with:
+      docs-task: ci/docs-renderer

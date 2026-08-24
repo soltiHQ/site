@@ -1,0 +1,13 @@
+schema: 1
+product: renderer-fixture
+title: Renderer fixture
+compatibility_line: "0.1"
+repository: https://github.com/soltiHQ/site
+
+version:
+  provider: input
+
+navigation:
+  - title: Start
+    pages:
+      - index
