@@ -31,6 +31,10 @@ body {
   letter-spacing: 0;
 }
 
+.Layout > .VPNav {
+  overflow-x: visible;
+}
+
 .VPNavBarTitle .title,
 .VPNavBarMenuLink,
 .VPNavBarMenuGroup .button,
