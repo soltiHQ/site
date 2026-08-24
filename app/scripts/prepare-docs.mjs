@@ -1,6 +1,17 @@
 import { execFileSync } from 'node:child_process'
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import {
+  copyFileSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
+import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
@@ -141,6 +152,30 @@ function assertInside(root, path, label) {
   }
 }
 
+function isInside(root, path) {
+  const fromRoot = relative(root, path)
+  return fromRoot !== '..' && !fromRoot.startsWith(`..${sep}`) && !isAbsolute(fromRoot)
+}
+
+function resolveRepositoryEntry(sourceRoot, input, label, type) {
+  if (typeof input !== 'string' || input.trim() === '' || isAbsolute(input)) {
+    fail(`${label}: path must be a non-empty repository-relative string`)
+  }
+
+  const entry = resolve(sourceRoot, input)
+  assertInside(sourceRoot, entry, label)
+  if (!existsSync(entry)) fail(`${label}: path does not exist: ${input}`)
+  if (lstatSync(entry).isSymbolicLink()) fail(`${label}: symbolic links are not allowed: ${input}`)
+
+  const resolvedRoot = realpathSync(sourceRoot)
+  const resolvedEntry = realpathSync(entry)
+  assertInside(resolvedRoot, resolvedEntry, label)
+
+  if (type === 'file' && !statSync(entry).isFile()) fail(`${label}: expected a file: ${input}`)
+  if (type === 'directory' && !statSync(entry).isDirectory()) fail(`${label}: expected a directory: ${input}`)
+  return entry
+}
+
 function splitTarget(target) {
   const hashIndex = target.indexOf('#')
   if (hashIndex === -1) return { path: target, hash: '' }
@@ -190,8 +225,20 @@ function rewriteLinks(markdown, context) {
 
         if (!existsSync(resolved)) fail(`${context.sourceFile}: linked file does not exist: ${target}`)
 
-        if (resolved.startsWith(`${context.docsRoot}${sep}`) || resolved === context.docsRoot) {
-          return `${open}${rawTarget}${close}`
+        if (isInside(context.docsRoot, resolved)) {
+          const docsPath = relative(context.docsRoot, resolved).split(sep).join('/').replace(/\.md$/, '')
+          const guideTarget = docsPath === 'index' ? '/' : `/${docsPath}`
+          return `${open}${guideTarget}${hash}${close}`
+        }
+
+        if (context.examplesRoot && isInside(context.examplesRoot, resolved)) {
+          const examplesPath = relative(context.examplesRoot, resolved).split(sep).join('/')
+          if (examplesPath === 'README.md') {
+            return `${open}/${context.examplesSlug}${hash}${close}`
+          }
+          if (extname(examplesPath) === '.rs' && !examplesPath.includes('/')) {
+            return `${open}/${context.examplesSlug}/${basename(examplesPath, '.rs')}${hash}${close}`
+          }
         }
 
         const repositoryPath = relative(context.sourceRoot, resolved).split(sep).join('/')
@@ -241,6 +288,33 @@ function validateManifest(manifest, file) {
       fail(`${file}: reference.url must be an HTTPS URL`)
     }
   }
+  if (manifest.api !== undefined) {
+    if (!manifest.api || typeof manifest.api !== 'object' || Array.isArray(manifest.api)) {
+      fail(`${file}: api must be a mapping`)
+    }
+    const unknown = Object.keys(manifest.api).filter((key) => !['provider', 'source', 'title', 'description'].includes(key))
+    if (unknown.length > 0) fail(`${file}: unknown api keys: ${unknown.sort().join(', ')}`)
+    if (manifest.api.provider !== 'rustdoc') fail(`${file}: api.provider must equal rustdoc`)
+    for (const key of ['source', 'title', 'description']) {
+      if (typeof manifest.api[key] !== 'string' || manifest.api[key].trim() === '') {
+        fail(`${file}: api.${key} must be a non-empty string`)
+      }
+    }
+  }
+  if (manifest.examples !== undefined) {
+    if (!manifest.examples || typeof manifest.examples !== 'object' || Array.isArray(manifest.examples)) {
+      fail(`${file}: examples must be a mapping`)
+    }
+    const unknown = Object.keys(manifest.examples)
+      .filter((key) => !['provider', 'catalog', 'directory', 'title', 'description'].includes(key))
+    if (unknown.length > 0) fail(`${file}: unknown examples keys: ${unknown.sort().join(', ')}`)
+    if (manifest.examples.provider !== 'rust') fail(`${file}: examples.provider must equal rust`)
+    for (const key of ['catalog', 'directory', 'title', 'description']) {
+      if (typeof manifest.examples[key] !== 'string' || manifest.examples[key].trim() === '') {
+        fail(`${file}: examples.${key} must be a non-empty string`)
+      }
+    }
+  }
   if (!Array.isArray(manifest.navigation) || manifest.navigation.length === 0) {
     fail(`${file}: navigation must be a non-empty list`)
   }
@@ -261,10 +335,8 @@ function canonicalPageUrl(siteUrl, product, line, slug) {
   return `${siteUrl}/docs/${product}/${line}/${suffix}`
 }
 
-function renderPage(sourceFile, context) {
-  const { frontmatter, body } = parseFrontmatter(readFileSync(sourceFile, 'utf8'), sourceFile)
+function renderMarkdownPage(frontmatter, body, context) {
   const canonical = canonicalPageUrl(context.siteUrl, context.product, context.line, context.slug)
-  const sourcePath = relative(context.sourceRoot, sourceFile).split(sep).join('/')
   const title = `${frontmatter.title} | ${context.productTitle} docs`
 
   const generatedFrontmatter = {
@@ -273,7 +345,7 @@ function renderPage(sourceFile, context) {
     productTitle: context.productTitle,
     version: context.version,
     compatibilityLine: context.line,
-    sourceUrl: `${context.repository}/blob/${context.ref}/${sourcePath}`,
+    sourceUrl: context.sourceUrl,
     head: [
       ['link', { rel: 'canonical', href: canonical }],
       ['meta', { property: 'og:type', content: 'article' }],
@@ -289,12 +361,37 @@ function renderPage(sourceFile, context) {
     ],
   }
 
-  const rewritten = rewriteLinks(body, { ...context, sourceFile })
+  const rewritten = rewriteLinks(body, context)
   return `---\n${stringifyYaml(generatedFrontmatter).trimEnd()}\n---\n\n${rewritten.trimStart()}`
+}
+
+function renderPage(sourceFile, context) {
+  const { frontmatter, body } = parseFrontmatter(readFileSync(sourceFile, 'utf8'), sourceFile)
+  const sourcePath = relative(context.sourceRoot, sourceFile).split(sep).join('/')
+  return renderMarkdownPage(frontmatter, body, {
+    ...context,
+    sourceFile,
+    sourceUrl: `${context.repository}/blob/${context.ref}/${sourcePath}`,
+  })
 }
 
 function buildNavigation(manifest, docsRoot) {
   const seenPages = new Set()
+  const syntheticPages = new Map()
+  if (manifest.examples) {
+    syntheticPages.set('examples', {
+      slug: 'examples',
+      title: manifest.examples.title,
+      description: manifest.examples.description,
+    })
+  }
+  if (manifest.api) {
+    syntheticPages.set('api', {
+      slug: 'api',
+      title: manifest.api.title,
+      description: manifest.api.description,
+    })
+  }
   const navigation = manifest.navigation.map((group, groupIndex) => {
     if (!group || typeof group !== 'object' || Array.isArray(group)) {
       fail(`docs/site.yml: navigation[${groupIndex}] must be a mapping`)
@@ -313,6 +410,12 @@ function buildNavigation(manifest, docsRoot) {
       if (seenPages.has(slug)) fail(`docs/site.yml: duplicate page slug: ${slug}`)
       seenPages.add(slug)
 
+      if (syntheticPages.has(slug)) {
+        const sourceFile = join(docsRoot, `${slug}.md`)
+        if (existsSync(sourceFile)) fail(`docs/site.yml: synthetic page conflicts with docs/${slug}.md`)
+        return syntheticPages.get(slug)
+      }
+
       const sourceFile = join(docsRoot, `${slug}.md`)
       if (!existsSync(sourceFile)) fail(`docs/site.yml: missing page docs/${slug}.md`)
       const { frontmatter } = parseFrontmatter(readFileSync(sourceFile, 'utf8'), sourceFile)
@@ -328,7 +431,236 @@ function buildNavigation(manifest, docsRoot) {
     .filter((slug) => !seenPages.has(slug))
 
   if (unlisted.length > 0) fail(`docs/site.yml: unlisted Markdown pages: ${unlisted.join(', ')}`)
+  for (const slug of syntheticPages.keys()) {
+    if (!seenPages.has(slug)) fail(`docs/site.yml: navigation must declare synthetic page ${slug}`)
+  }
   return navigation
+}
+
+function extractRustExample(sourceFile) {
+  const lines = readFileSync(sourceFile, 'utf8').split(/\r?\n/)
+  const docs = []
+  let index = 0
+
+  while (index < lines.length && lines[index].startsWith('//!')) {
+    docs.push(lines[index].replace(/^\/\/! ?/, ''))
+    index += 1
+  }
+
+  if (docs.length === 0) fail(`${sourceFile}: example must start with //! documentation`)
+  while (index < lines.length && lines[index].trim() === '') index += 1
+
+  const code = lines.slice(index).join('\n').trimEnd()
+  if (code === '') fail(`${sourceFile}: example program must not be empty`)
+
+  const heading = docs.find((line) => /^#\s+\S/.test(line))
+  if (!heading) fail(`${sourceFile}: leading documentation must contain an H1`)
+  const title = heading.replace(/^#\s+/, '').trim()
+
+  const headingIndex = docs.indexOf(heading)
+  const descriptionLines = []
+  for (const line of docs.slice(headingIndex + 1)) {
+    if (line.trim() === '') {
+      if (descriptionLines.length > 0) break
+      continue
+    }
+    if (/^#/.test(line)) break
+    descriptionLines.push(line.trim())
+  }
+  const description = descriptionLines.join(' ')
+  if (description === '') fail(`${sourceFile}: leading documentation must start with a descriptive paragraph`)
+
+  return { title, description, documentation: docs.join('\n').trim(), code }
+}
+
+function renderExamples(manifest, product, context) {
+  if (!manifest.examples) return
+
+  const catalogFile = resolveRepositoryEntry(
+    context.sourceRoot,
+    manifest.examples.catalog,
+    'docs/site.yml: examples.catalog',
+    'file',
+  )
+  const examplesRoot = resolveRepositoryEntry(
+    context.sourceRoot,
+    manifest.examples.directory,
+    'docs/site.yml: examples.directory',
+    'directory',
+  )
+  if (!isInside(examplesRoot, catalogFile)) {
+    fail('docs/site.yml: examples.catalog must be inside examples.directory')
+  }
+
+  const entries = readdirSync(examplesRoot, { withFileTypes: true })
+  const exampleFiles = entries
+    .filter((entry) => entry.name.endsWith('.rs'))
+    .map((entry) => {
+      if (!entry.isFile() || entry.isSymbolicLink()) {
+        fail(`docs/site.yml: example must be a regular file: ${entry.name}`)
+      }
+      const slug = basename(entry.name, '.rs')
+      if (!/^[a-z0-9][a-z0-9_-]*$/.test(slug)) fail(`docs/site.yml: invalid example slug: ${slug}`)
+      return { slug, sourceFile: join(examplesRoot, entry.name) }
+    })
+    .sort((left, right) => left.slug.localeCompare(right.slug))
+  if (exampleFiles.length === 0) fail('docs/site.yml: examples.directory contains no Rust examples')
+
+  const catalog = readFileSync(catalogFile, 'utf8')
+  const linkedExamples = new Set()
+  for (const match of catalog.matchAll(/\[[^\]]*\]\(([^\s)]+)(?:\s+[^)]*)?\)/g)) {
+    const { path: targetPath } = splitTarget(match[1])
+    if (extname(targetPath) !== '.rs') continue
+    const resolved = resolve(dirname(catalogFile), targetPath)
+    if (!isInside(examplesRoot, resolved) || dirname(resolved) !== examplesRoot) {
+      fail(`${catalogFile}: example link must target a direct child of examples.directory: ${match[1]}`)
+    }
+    if (!existsSync(resolved) || !statSync(resolved).isFile()) {
+      fail(`${catalogFile}: linked example does not exist: ${match[1]}`)
+    }
+    linkedExamples.add(basename(resolved, '.rs'))
+  }
+  const missingExamples = exampleFiles.map((example) => example.slug).filter((slug) => !linkedExamples.has(slug))
+  if (missingExamples.length > 0) {
+    fail(`${catalogFile}: examples missing from catalog: ${missingExamples.join(', ')}`)
+  }
+
+  const catalogPath = relative(context.sourceRoot, catalogFile).split(sep).join('/')
+  writeFileSync(join(context.output, 'examples.md'), renderMarkdownPage({
+    title: manifest.examples.title,
+    description: manifest.examples.description,
+  }, catalog, {
+    ...context,
+    slug: 'examples',
+    sourceFile: catalogFile,
+    sourceUrl: `${product.repository}/blob/${product.ref}/${catalogPath}`,
+    examplesRoot,
+    examplesSlug: 'examples',
+  }))
+
+  const examplesOutput = join(context.output, 'examples')
+  mkdirSync(examplesOutput, { recursive: true })
+  for (const example of exampleFiles) {
+    const extracted = extractRustExample(example.sourceFile)
+    const fence = extracted.code.includes('```') ? '````' : '```'
+    const body = `${extracted.documentation}\n\n## Complete program\n\n${fence}rust\n${extracted.code}\n${fence}\n`
+    const sourcePath = relative(context.sourceRoot, example.sourceFile).split(sep).join('/')
+    writeFileSync(join(examplesOutput, `${example.slug}.md`), renderMarkdownPage({
+      title: extracted.title,
+      description: extracted.description,
+    }, body, {
+      ...context,
+      slug: `examples/${example.slug}`,
+      sourceFile: example.sourceFile,
+      sourceUrl: `${product.repository}/blob/${product.ref}/${sourcePath}`,
+      examplesRoot,
+      examplesSlug: 'examples',
+    }))
+  }
+}
+
+function readApiIndex(manifest, product, context) {
+  if (!manifest.api) return undefined
+  if (!product.reference) fail('docs/site.yml: api requires reference')
+
+  const sourceFile = resolveRepositoryEntry(
+    context.sourceRoot,
+    manifest.api.source,
+    'docs/site.yml: api.source',
+    'file',
+  )
+  let index
+  try {
+    index = JSON.parse(readFileSync(sourceFile, 'utf8'))
+  } catch (error) {
+    fail(`${sourceFile}: invalid api JSON: ${error instanceof Error ? error.message : String(error)}`)
+  }
+
+  if (!index || typeof index !== 'object' || Array.isArray(index)) fail(`${sourceFile}: root must be an object`)
+  const unknown = Object.keys(index)
+    .filter((key) => !['schema', 'product', 'package', 'version', 'reference', 'features', 'items'].includes(key))
+  if (unknown.length > 0) fail(`${sourceFile}: unknown keys: ${unknown.sort().join(', ')}`)
+  if (index.schema !== 1) fail(`${sourceFile}: schema must equal 1`)
+  if (index.product !== product.product) fail(`${sourceFile}: product must equal ${product.product}`)
+  if (typeof index.package !== 'string' || index.package.trim() === '') fail(`${sourceFile}: package must be non-empty`)
+  if (manifest.version.provider === 'cargo' && index.package !== manifest.version.package) {
+    fail(`${sourceFile}: package must equal ${manifest.version.package}`)
+  }
+  if (index.version !== product.version) fail(`${sourceFile}: version must equal ${product.version}`)
+  if (index.reference !== product.reference.url) fail(`${sourceFile}: reference must equal ${product.reference.url}`)
+  if (index.features !== 'all') fail(`${sourceFile}: features must equal all`)
+  if (!Array.isArray(index.items) || index.items.length === 0) fail(`${sourceFile}: items must be a non-empty array`)
+
+  const seen = new Set()
+  for (const [itemIndex, item] of index.items.entries()) {
+    const location = `${sourceFile}: items[${itemIndex}]`
+    if (!item || typeof item !== 'object' || Array.isArray(item)) fail(`${location} must be an object`)
+    const itemUnknown = Object.keys(item).filter((key) => !['path', 'kind', 'url'].includes(key))
+    if (itemUnknown.length > 0) fail(`${location}: unknown keys: ${itemUnknown.sort().join(', ')}`)
+    for (const key of ['path', 'kind', 'url']) {
+      if (typeof item[key] !== 'string' || item[key].trim() === '') fail(`${location}: ${key} must be non-empty`)
+    }
+    if (!/^[A-Za-z_][A-Za-z0-9_]*(?:::[A-Za-z_][A-Za-z0-9_]*)*$/.test(item.path)) {
+      fail(`${location}: path must be a Rust item path`)
+    }
+    if (!/^[a-z][a-z0-9_-]*$/.test(item.kind)) fail(`${location}: kind is invalid`)
+    let itemUrl
+    try {
+      itemUrl = new URL(item.url)
+    } catch {
+      fail(`${location}: url must be a valid URL`)
+    }
+    if (itemUrl.protocol !== 'https:'
+      || item.url !== itemUrl.href
+      || !item.url.startsWith(product.reference.url)
+      || item.url.includes('/latest/')) {
+      fail(`${location}: url must use the exact versioned API reference`)
+    }
+    const identity = `${item.kind}\u0000${item.path}`
+    if (seen.has(identity)) fail(`${location}: duplicate API item ${item.path}`)
+    seen.add(identity)
+  }
+
+  return { sourceFile, index }
+}
+
+function renderApi(manifest, product, context) {
+  const api = readApiIndex(manifest, product, context)
+  if (!api) return
+
+  const items = [...api.index.items].sort((left, right) => (
+    left.path.localeCompare(right.path) || left.kind.localeCompare(right.kind)
+  ))
+  const groups = new Map()
+  for (const item of items) {
+    const parts = item.path.split('::')
+    const group = parts.length > 2 ? parts[1] : 'Crate root'
+    if (!groups.has(group)) groups.set(group, [])
+    groups.get(group).push(item)
+  }
+
+  const sections = [...groups.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([group, groupItems]) => {
+      const rows = groupItems
+        .map((item) => `- [\`${item.path}\`](${item.url}) — ${item.kind.replaceAll('_', ' ')}`)
+        .join('\n')
+      return `## ${group}\n\n${rows}`
+    })
+    .join('\n\n')
+  const apiJsonUrl = `${context.siteUrl}/docs/${product.product}/${product.line}/api.json`
+  const body = `# ${manifest.api.title}\n\n${manifest.api.description}\n\nThis inventory is generated from the all-features public API for version ${product.version}. Open an item on docs.rs for methods, fields, variants, feature requirements, and exact contracts.\n\n[Download api.json](${apiJsonUrl})\n\n${sections}\n`
+
+  copyFileSync(api.sourceFile, join(context.publicOutput, 'api.json'))
+  writeFileSync(join(context.output, 'api.md'), renderMarkdownPage({
+    title: manifest.api.title,
+    description: manifest.api.description,
+  }, body, {
+    ...context,
+    slug: 'api',
+    sourceFile: api.sourceFile,
+    sourceUrl: product.reference.url,
+  }))
 }
 
 function pageShell({ title, description, canonical, robots = 'index,follow,max-image-preview:large', head = '', body }) {
@@ -426,20 +758,22 @@ function writeCatalog(staticOutput, catalog, siteUrl) {
   )
 }
 
-function writeCurrentAlias(staticOutput, product) {
+function writeGuideAlias(staticOutput, product, alias) {
   const target = `/docs/${product.product}/${product.line}/`
   const productDir = join(staticOutput, product.product)
-  mkdirSync(productDir, { recursive: true })
+  const aliasDir = alias ? join(productDir, alias) : productDir
+  mkdirSync(aliasDir, { recursive: true })
+  const label = alias === 'latest' ? 'latest' : 'current'
 
   const body = `<main class="redirect">
   <p class="eyebrow">${escapeHtml(product.title)} documentation</p>
-  <h1>Opening the current guide.</h1>
+  <h1>Opening the ${label} guide.</h1>
   <p><a href="${target}">Continue to ${escapeHtml(product.title)} ${escapeHtml(product.line)} →</a></p>
 </main>`
 
-  writeFileSync(join(productDir, 'index.html'), pageShell({
+  writeFileSync(join(aliasDir, 'index.html'), pageShell({
     title: `${product.title} documentation`,
-    description: `Current ${product.title} user guide.`,
+    description: `${label === 'latest' ? 'Latest' : 'Current'} ${product.title} user guide.`,
     canonical: `${product.siteUrl}${target}`,
     robots: 'noindex,follow',
     head: `<meta http-equiv="refresh" content="0; url=${target}">`,
@@ -516,30 +850,43 @@ function main() {
     navigation,
   }
 
+  const examplesRoot = manifest.examples
+    ? resolveRepositoryEntry(source, manifest.examples.directory, 'docs/site.yml: examples.directory', 'directory')
+    : undefined
+  const renderContext = {
+    sourceRoot: source,
+    docsRoot,
+    repository: product.repository,
+    referenceUrl: product.reference?.url,
+    versionPackage: manifest.version.provider === 'cargo' ? manifest.version.package : undefined,
+    ref,
+    version,
+    line: product.line,
+    product: product.product,
+    productTitle: product.title,
+    siteUrl,
+    output,
+    publicOutput,
+    examplesRoot,
+    examplesSlug: manifest.examples ? 'examples' : undefined,
+  }
+
   for (const group of navigation) {
     for (const page of group.pages) {
+      if ((page.slug === 'examples' && manifest.examples) || (page.slug === 'api' && manifest.api)) continue
       const sourceFile = join(docsRoot, `${page.slug}.md`)
       const outputFile = join(output, `${page.slug}.md`)
       writeFileSync(outputFile, renderPage(sourceFile, {
-        sourceRoot: source,
-        docsRoot,
-        sourceFile,
-        sourceUrl: sourceFile,
-        repository: product.repository,
-        referenceUrl: product.reference?.url,
-        versionPackage: manifest.version.provider === 'cargo' ? manifest.version.package : undefined,
-        ref,
-        version,
-        line: product.line,
-        product: product.product,
-        productTitle: product.title,
-        siteUrl,
+        ...renderContext,
         slug: page.slug,
       }))
     }
   }
 
-  writeCurrentAlias(staticOutput, product)
+  renderExamples(manifest, product, renderContext)
+  renderApi(manifest, product, renderContext)
+  writeGuideAlias(staticOutput, product)
+  writeGuideAlias(staticOutput, product, 'latest')
   writeFileSync(join(output, 'site.json'), `${JSON.stringify(product, null, 2)}\n`)
 
   process.stdout.write(`Prepared ${product.title} ${product.version} documentation from ${product.ref}.\n`)

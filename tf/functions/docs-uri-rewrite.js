@@ -26,7 +26,7 @@ function handler(event) {
     return request;
   }
 
-  if (segments.length === 3 && /^\d+\.\d+$/.test(leaf)) {
+  if (segments.length === 3 && (leaf === "latest" || /^\d+\.\d+$/.test(leaf))) {
     request.uri = uri + "/index.html";
     return request;
   }
