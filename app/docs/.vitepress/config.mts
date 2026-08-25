@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
 
 import { defineConfig, type DefaultTheme } from 'vitepress'
@@ -29,9 +30,20 @@ interface DocsManifest {
   navigation: DocsGroup[]
 }
 
-const generatedRoot = resolve(import.meta.dirname, '..', '.generated')
+const generatedRoot = resolve(
+  process.env.DOCS_OUTPUT ?? resolve(import.meta.dirname, '..', '.generated'),
+)
+const renderedRoot = resolve(
+  process.env.DOCS_RENDER_OUTPUT
+    ?? resolve(import.meta.dirname, '..', '..', 'dist', 'docs'),
+)
 const manifest = JSON.parse(readFileSync(resolve(generatedRoot, 'site.json'), 'utf8')) as DocsManifest
 const productBase = `/docs/${manifest.product}/${manifest.line}/`
+const vitepressRequire = createRequire(import.meta.resolve('vitepress'))
+const vueEntry = vitepressRequire.resolve('vue/dist/vue.runtime.esm-bundler.js')
+const vueServerRenderer = vitepressRequire.resolve(
+  '@vue/server-renderer/dist/server-renderer.esm-bundler.js',
+)
 
 const sidebar: DefaultTheme.Sidebar = {
   '/': manifest.navigation.map((group) => ({
@@ -58,8 +70,8 @@ export default defineConfig({
   description: 'Versioned user guides for the Solti task execution stack.',
   lang: 'en-US',
   base: productBase,
-  srcDir: '.generated',
-  outDir: resolve(import.meta.dirname, '..', '..', 'dist', 'docs', manifest.product, manifest.line),
+  srcDir: generatedRoot,
+  outDir: resolve(renderedRoot, manifest.product, manifest.line),
   cleanUrls: true,
   appearance: false,
   lastUpdated: false,
@@ -69,6 +81,7 @@ export default defineConfig({
   head: [
     ['meta', { name: 'theme-color', content: '#ffffff' }],
     ['link', { rel: 'icon', type: 'image/svg+xml', href: `${productBase}solti-logo-dark.svg` }],
+    ['link', { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
     ['link', {
@@ -78,6 +91,15 @@ export default defineConfig({
   ],
   markdown: {
     lineNumbers: true,
+  },
+  vite: {
+    resolve: {
+      alias: {
+        'vue/server-renderer': vueServerRenderer,
+        vue: vueEntry,
+      },
+      dedupe: ['vue'],
+    },
   },
   themeConfig: {
     logo: '/solti-logo-dark.svg',

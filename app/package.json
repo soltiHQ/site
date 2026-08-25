@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "npm run type-check && vite build && npm run docs:catalog",
+    "build": "npm run site:validate && npm run type-check && vite build && npm run docs:catalog",
+    "site:validate": "node scripts/validate-site-content.mjs",
     "docs:catalog": "node scripts/prepare-docs-catalog.mjs",
     "docs:prepare": "node scripts/prepare-docs.mjs",
     "docs:test": "node scripts/test-docs-renderer.mjs",

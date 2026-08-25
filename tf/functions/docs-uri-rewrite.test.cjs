@@ -11,6 +11,8 @@ vm.runInContext(readFileSync(join(__dirname, 'docs-uri-rewrite.js'), 'utf8'), co
 const cases = new Map([
   ['/', '/'],
   ['/assets/app.js', '/assets/app.js'],
+  ['/documentation', '/documentation'],
+  ['/docs.css', '/docs.css'],
   ['/docs', '/docs/index.html'],
   ['/docs/', '/docs/index.html'],
   ['/docs/taskvisor', '/docs/taskvisor/index.html'],
@@ -21,6 +23,8 @@ const cases = new Map([
   ['/docs/taskvisor/0.8/', '/docs/taskvisor/0.8/index.html'],
   ['/docs/taskvisor/0.8/installation', '/docs/taskvisor/0.8/installation.html'],
   ['/docs/taskvisor/0.8/installation.html', '/docs/taskvisor/0.8/installation.html'],
+  ['/docs/taskvisor/0.8/examples/hello', '/docs/taskvisor/0.8/examples/hello.html'],
+  ['/docs/taskvisor/0.8/api.json', '/docs/taskvisor/0.8/api.json'],
   ['/docs/taskvisor/0.8/assets/app.123.js', '/docs/taskvisor/0.8/assets/app.123.js'],
 ])
 

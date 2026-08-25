@@ -21,6 +21,9 @@ const scriptFile = fileURLToPath(import.meta.url)
 const appRoot = resolve(dirname(scriptFile), '..')
 const defaultOutput = join(appRoot, 'docs', '.generated')
 const defaultSource = resolve(appRoot, '..', '..', 'taskvisor')
+const siteMeta = JSON.parse(readFileSync(join(appRoot, 'src', 'contents', 'site.json'), 'utf8')).meta
+const socialImagePath = new URL(siteMeta.image).pathname
+const socialImageAlt = siteMeta.imageAlt
 
 function fail(message) {
   throw new Error(message)
@@ -155,6 +158,49 @@ function assertInside(root, path, label) {
 function isInside(root, path) {
   const fromRoot = relative(root, path)
   return fromRoot !== '..' && !fromRoot.startsWith(`..${sep}`) && !isAbsolute(fromRoot)
+}
+
+function canonicalizeForSafety(path) {
+  const missingSegments = []
+  let cursor = resolve(path)
+
+  while (!existsSync(cursor)) {
+    const parent = dirname(cursor)
+    if (parent === cursor) break
+    missingSegments.unshift(basename(cursor))
+    cursor = parent
+  }
+
+  const existingRoot = existsSync(cursor) ? realpathSync(cursor) : cursor
+  return resolve(existingRoot, ...missingSegments)
+}
+
+function pathsOverlap(first, second) {
+  return isInside(first, second) || isInside(second, first)
+}
+
+function assertSafeOutputPath(output, source, staticOutput) {
+  const repositoryRoot = canonicalizeForSafety(resolve(appRoot, '..'))
+  const generatedRoot = canonicalizeForSafety(defaultOutput)
+  const safeOutput = canonicalizeForSafety(output)
+  const safeSource = canonicalizeForSafety(source)
+  const safeStaticOutput = canonicalizeForSafety(staticOutput)
+
+  if (dirname(safeOutput) === safeOutput) {
+    fail(`Refusing to remove unsafe docs output path: ${output}`)
+  }
+  if (isInside(safeOutput, repositoryRoot)) {
+    fail(`Refusing to remove the site repository or one of its ancestors: ${output}`)
+  }
+  if (pathsOverlap(safeOutput, safeSource)) {
+    fail(`Docs output must not overlap the product source: ${output}`)
+  }
+  if (pathsOverlap(safeOutput, safeStaticOutput)) {
+    fail(`Docs output must not overlap static output: ${output}`)
+  }
+  if (isInside(repositoryRoot, safeOutput) && !isInside(generatedRoot, safeOutput)) {
+    fail(`Docs output inside the site repository must stay under ${defaultOutput}: ${output}`)
+  }
 }
 
 function resolveRepositoryEntry(sourceRoot, input, label, type) {
@@ -338,6 +384,7 @@ function canonicalPageUrl(siteUrl, product, line, slug) {
 function renderMarkdownPage(frontmatter, body, context) {
   const canonical = canonicalPageUrl(context.siteUrl, context.product, context.line, context.slug)
   const title = `${frontmatter.title} | ${context.productTitle} docs`
+  const socialImage = new URL(socialImagePath, `${context.siteUrl}/`).href
 
   const generatedFrontmatter = {
     ...frontmatter,
@@ -353,11 +400,16 @@ function renderMarkdownPage(frontmatter, body, context) {
       ['meta', { property: 'og:title', content: title }],
       ['meta', { property: 'og:description', content: frontmatter.description }],
       ['meta', { property: 'og:url', content: canonical }],
-      ['meta', { property: 'og:image', content: `${context.siteUrl}/social/solti-preview.png` }],
+      ['meta', { property: 'og:image', content: socialImage }],
+      ['meta', { property: 'og:image:type', content: 'image/png' }],
+      ['meta', { property: 'og:image:width', content: '1200' }],
+      ['meta', { property: 'og:image:height', content: '630' }],
+      ['meta', { property: 'og:image:alt', content: socialImageAlt }],
       ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
       ['meta', { name: 'twitter:title', content: title }],
       ['meta', { name: 'twitter:description', content: frontmatter.description }],
-      ['meta', { name: 'twitter:image', content: `${context.siteUrl}/social/solti-preview.png` }],
+      ['meta', { name: 'twitter:image', content: socialImage }],
+      ['meta', { name: 'twitter:image:alt', content: socialImageAlt }],
     ],
   }
 
@@ -667,12 +719,15 @@ function pageShell({ title, description, canonical, robots = 'index,follow,max-i
   const escapedTitle = escapeHtml(title)
   const escapedDescription = escapeHtml(description)
   const escapedCanonical = escapeHtml(canonical)
+  const escapedSocialImage = escapeHtml(new URL(socialImagePath, canonical).href)
+  const escapedSocialImageAlt = escapeHtml(socialImageAlt)
 
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffffff">
   <meta name="description" content="${escapedDescription}">
   <meta name="robots" content="${escapeHtml(robots)}">
   <link rel="canonical" href="${escapedCanonical}">
@@ -681,19 +736,25 @@ function pageShell({ title, description, canonical, robots = 'index,follow,max-i
   <meta property="og:title" content="${escapedTitle}">
   <meta property="og:description" content="${escapedDescription}">
   <meta property="og:url" content="${escapedCanonical}">
-  <meta property="og:image" content="https://solti.io/social/solti-preview.png">
+  <meta property="og:image" content="${escapedSocialImage}">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="${escapedSocialImageAlt}">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${escapedTitle}">
   <meta name="twitter:description" content="${escapedDescription}">
-  <meta name="twitter:image" content="https://solti.io/social/solti-preview.png">
+  <meta name="twitter:image" content="${escapedSocialImage}">
+  <meta name="twitter:image:alt" content="${escapedSocialImageAlt}">
   <link rel="icon" type="image/svg+xml" href="/docs/solti-logo-dark.svg">
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Serif:wght@500;600&amp;display=swap">
   ${head}
   <title>${escapedTitle}</title>
   <style>
-    :root { color-scheme: light; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #141a21; background: #fff; }
+    :root { --title-section: clamp(2.2rem, 4.8vw, 4.8rem); color-scheme: light; font-family: 'IBM Plex Sans', system-ui, sans-serif; color: #141a21; background: #fff; }
     * { box-sizing: border-box; }
     body { margin: 0; min-width: 320px; }
     a { color: inherit; text-underline-offset: .2em; }
@@ -706,6 +767,11 @@ function pageShell({ title, description, canonical, robots = 'index,follow,max-i
     .eyebrow { margin: 0 0 1.25rem; color: #24713f; font-family: 'IBM Plex Mono', monospace; font-size: .75rem; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; }
     h1 { max-width: 13ch; margin: 0; font-family: 'IBM Plex Serif', Georgia, serif; font-size: clamp(3.25rem, 9vw, 7.5rem); font-weight: 600; letter-spacing: -.04em; line-height: .96; }
     .lede { max-width: 42rem; margin: 2rem 0 0; color: #3a424d; font-size: clamp(1.125rem, 2.4vw, 1.45rem); line-height: 1.55; }
+    .catalog__intro { display: grid; align-items: end; grid-template-columns: minmax(0, 1.05fr) minmax(20rem, .95fr); gap: 1.5rem clamp(3rem, 8vw, 8rem); }
+    .catalog__heading { display: grid; gap: 1.5rem; }
+    .catalog .eyebrow { margin: 0; }
+    .catalog h1 { max-width: 12ch; font-size: var(--title-section); font-weight: 500; letter-spacing: -.035em; line-height: .98; }
+    .catalog .lede { align-self: end; padding-bottom: .5rem; margin: 0; font-size: clamp(1rem, 1.35vw, 1.2rem); line-height: 1.65; }
     .products { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 1rem; margin-top: clamp(3rem, 8vw, 6rem); }
     .product { min-height: 15rem; padding: 1.75rem; border: 1px solid #d8dee6; border-top: 3px solid #2f9e58; border-radius: .5rem; text-decoration: none; transition: border-color 160ms ease, transform 160ms ease; }
     .product:hover { border-color: #2f9e58; transform: translateY(-2px); }
@@ -715,6 +781,7 @@ function pageShell({ title, description, canonical, robots = 'index,follow,max-i
     .redirect { display: grid; min-height: 100vh; place-content: center; padding: 2rem; text-align: center; }
     .redirect h1 { max-width: 18ch; font-size: clamp(2.5rem, 7vw, 5rem); }
     .redirect p { color: #3a424d; font-size: 1.125rem; }
+    @media (max-width: 48rem) { .catalog__intro { max-width: 42rem; grid-template-columns: minmax(0, 1fr); } }
     @media (prefers-reduced-motion: reduce) { .product { transition: none; } }
   </style>
 </head>
@@ -736,10 +803,14 @@ function writeCatalog(staticOutput, catalog, siteUrl) {
   <a class="brand" href="/"><img src="/docs/solti-logo-dark.svg" alt=""><span>Solti docs</span></a>
   <a class="source" href="https://github.com/soltiHQ">Source ↗</a>
 </header>
-<main class="shell">
-  <p class="eyebrow">Documentation</p>
-  <h1>Build with the stack.</h1>
-  <p class="lede">Choose a component. Follow its versioned usage guide. Open the API reference when you need exact public contracts.</p>
+<main class="shell catalog">
+  <header class="catalog__intro">
+    <div class="catalog__heading">
+      <p class="eyebrow">Documentation</p>
+      <h1>Build with the stack.</h1>
+    </div>
+    <p class="lede">Choose a component. Follow its versioned usage guide. Open the API reference when you need exact public contracts.</p>
+  </header>
   <section class="products" aria-label="Product documentation">${cards}
   </section>
 </main>`
@@ -790,6 +861,7 @@ function main() {
   const allowDirty = (args['allow-dirty'] ?? process.env.DOCS_ALLOW_DIRTY ?? 'false') === 'true'
 
   if (!existsSync(source) || !statSync(source).isDirectory()) fail(`Product source does not exist: ${source}`)
+  assertSafeOutputPath(output, source, staticOutput)
   const worktreeStatus = git(source, 'status', '--porcelain', '--untracked-files=all')
   if (worktreeStatus && !allowDirty) {
     fail('Product source contains uncommitted files; use an exact clean checkout or --allow-dirty true for local preview')

@@ -15,6 +15,7 @@
     "github": "https://github.com/soltiHQ",
     "contributing": "https://github.com/soltiHQ/.github/blob/main/CONTRIBUTING.md",
     "agentOverview": "https://github.com/soltiHQ/dashboards/tree/main/solti/agent-overview",
+    "taskvisorDocs": "/docs/taskvisor/",
     "taskvisorQuickStart": "https://github.com/soltiHQ/taskvisor#quick-start",
     "sdkQuickStart": "https://github.com/soltiHQ/sdk#quick-start",
     "sdkHttpAgent": "https://github.com/soltiHQ/sdk/blob/main/crates/solti/examples/agent_http.rs",
@@ -143,7 +144,7 @@
               "Queue, Replace, or Reject by Key"
             ],
             "action": "Start with Taskvisor ↗",
-            "link": "taskvisorQuickStart"
+            "link": "taskvisorDocs"
           },
           {
             "tone": "sdk",
