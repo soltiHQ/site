@@ -47,6 +47,10 @@ resource "aws_cloudfront_response_headers_policy" "site" {
   name    = "${local.policy_name_prefix}-headers-v1"
   comment = "Security headers for ${var.domain_name}"
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
   security_headers_config {
     content_security_policy {
       content_security_policy = "default-src 'self'; base-uri 'self'; connect-src 'self'; font-src 'self' https://fonts.gstatic.com; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com"
@@ -105,6 +109,10 @@ resource "aws_cloudfront_response_headers_policy" "site" {
 resource "aws_cloudfront_response_headers_policy" "docs" {
   name    = "${local.policy_name_prefix}-docs-headers-v1"
   comment = "Security headers for ${var.domain_name} documentation"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 
   security_headers_config {
     content_security_policy {
