@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import {
   copyFileSync,
   existsSync,
@@ -20,7 +21,12 @@ import { parse as parseYaml, stringify as stringifyYaml } from 'yaml'
 const scriptFile = fileURLToPath(import.meta.url)
 const appRoot = resolve(dirname(scriptFile), '..')
 const defaultOutput = join(appRoot, 'docs', '.generated')
+const defaultStaticOutput = join(appRoot, 'dist', 'docs')
 const defaultSource = resolve(appRoot, '..', '..', 'taskvisor')
+const outputMarkerName = '.solti-docs-renderer-output'
+const outputMarkerContents = 'solti-docs-renderer-output:v1\n'
+const localImageExtensions = new Set(['.avif', '.gif', '.jpeg', '.jpg', '.png', '.svg', '.webp'])
+const localImageOutputDirectory = 'docs-assets'
 const siteMeta = JSON.parse(readFileSync(join(appRoot, 'src', 'contents', 'site.json'), 'utf8')).meta
 const socialImagePath = new URL(siteMeta.image).pathname
 const socialImageAlt = siteMeta.imageAlt
@@ -179,12 +185,43 @@ function pathsOverlap(first, second) {
   return isInside(first, second) || isInside(second, first)
 }
 
-function assertSafeOutputPath(output, source, staticOutput) {
-  const repositoryRoot = canonicalizeForSafety(resolve(appRoot, '..'))
+function assertDirectoryTarget(path, label) {
+  if (!existsSync(path)) return
+
+  const entry = lstatSync(path)
+  if (entry.isSymbolicLink()) fail(`${label} must not be a symbolic link: ${path}`)
+  if (!entry.isDirectory()) fail(`${label} must be a directory: ${path}`)
+}
+
+function hasValidOutputMarker(output) {
+  const marker = join(output, outputMarkerName)
+  if (!existsSync(marker)) return false
+
+  const entry = lstatSync(marker)
+  return !entry.isSymbolicLink()
+    && entry.isFile()
+    && readFileSync(marker, 'utf8') === outputMarkerContents
+}
+
+function assertOwnedOutputDirectory(output, managedOutput) {
+  if (!existsSync(output)) return
+  assertDirectoryTarget(output, 'Docs output')
+
+  if (managedOutput || readdirSync(output).length === 0 || hasValidOutputMarker(output)) return
+  fail(`Refusing to remove unowned docs output directory: ${output}`)
+}
+
+function assertSafeOutputPaths(output, source, staticOutput) {
+  const repositoryPath = resolve(appRoot, '..')
+  const repositoryRoot = canonicalizeForSafety(repositoryPath)
   const generatedRoot = canonicalizeForSafety(defaultOutput)
+  const staticRoot = canonicalizeForSafety(defaultStaticOutput)
   const safeOutput = canonicalizeForSafety(output)
   const safeSource = canonicalizeForSafety(source)
   const safeStaticOutput = canonicalizeForSafety(staticOutput)
+  const outputIsInsideRepository = isInside(repositoryPath, resolve(output))
+  const staticOutputIsInsideRepository = isInside(repositoryPath, resolve(staticOutput))
+  const managedOutput = isInside(repositoryRoot, generatedRoot) && isInside(generatedRoot, safeOutput)
 
   if (dirname(safeOutput) === safeOutput) {
     fail(`Refusing to remove unsafe docs output path: ${output}`)
@@ -198,9 +235,39 @@ function assertSafeOutputPath(output, source, staticOutput) {
   if (pathsOverlap(safeOutput, safeStaticOutput)) {
     fail(`Docs output must not overlap static output: ${output}`)
   }
+  if (outputIsInsideRepository && !isInside(repositoryRoot, safeOutput)) {
+    fail(`Docs output inside the site repository must not resolve outside it: ${output}`)
+  }
   if (isInside(repositoryRoot, safeOutput) && !isInside(generatedRoot, safeOutput)) {
     fail(`Docs output inside the site repository must stay under ${defaultOutput}: ${output}`)
   }
+
+  if (dirname(safeStaticOutput) === safeStaticOutput) {
+    fail(`Refusing to write docs static output to an unsafe path: ${staticOutput}`)
+  }
+  if (isInside(safeStaticOutput, repositoryRoot)) {
+    fail(`Refusing to write docs static output to the site repository or one of its ancestors: ${staticOutput}`)
+  }
+  if (pathsOverlap(safeStaticOutput, safeSource)) {
+    fail(`Docs static output must not overlap the product source: ${staticOutput}`)
+  }
+  if (staticOutputIsInsideRepository && !isInside(repositoryRoot, safeStaticOutput)) {
+    fail(`Docs static output inside the site repository must not resolve outside it: ${staticOutput}`)
+  }
+  if (isInside(repositoryRoot, safeStaticOutput) && !isInside(staticRoot, safeStaticOutput)) {
+    fail(`Docs static output inside the site repository must stay under ${defaultStaticOutput}: ${staticOutput}`)
+  }
+
+  assertDirectoryTarget(staticOutput, 'Docs static output')
+  assertOwnedOutputDirectory(output, managedOutput)
+  return { managedOutput }
+}
+
+function resetDocsOutput(output, managedOutput) {
+  assertOwnedOutputDirectory(output, managedOutput)
+  rmSync(output, { recursive: true, force: true })
+  mkdirSync(output, { recursive: true })
+  writeFileSync(join(output, outputMarkerName), outputMarkerContents)
 }
 
 function resolveRepositoryEntry(sourceRoot, input, label, type) {
@@ -228,6 +295,77 @@ function splitTarget(target) {
   return { path: target.slice(0, hashIndex), hash: target.slice(hashIndex) }
 }
 
+function splitLocalImageTarget(target) {
+  const queryIndex = target.indexOf('?')
+  const hashIndex = target.indexOf('#')
+  const suffixIndexes = [queryIndex, hashIndex].filter((index) => index !== -1)
+  const suffixIndex = suffixIndexes.length === 0 ? -1 : Math.min(...suffixIndexes)
+  if (suffixIndex === -1) return { path: target, suffix: '' }
+  return { path: target.slice(0, suffixIndex), suffix: target.slice(suffixIndex) }
+}
+
+function localImageSourceRoot(context) {
+  if (isInside(context.docsRoot, context.sourceFile)) return context.docsRoot
+  if (context.examplesRoot && isInside(context.examplesRoot, context.sourceFile)) return context.examplesRoot
+  fail(`${context.sourceFile}: local images are only allowed inside product documentation sources`)
+}
+
+function copyLocalImage(target, context) {
+  const { path: encodedPath, suffix } = splitLocalImageTarget(target)
+  let targetPath
+  try {
+    targetPath = decodeURIComponent(encodedPath)
+  } catch {
+    fail(`${context.sourceFile}: local image path must use valid URL encoding: ${target}`)
+  }
+  if (targetPath === '' || targetPath.includes('\0') || targetPath.includes('\\')) {
+    fail(`${context.sourceFile}: invalid local image path: ${target}`)
+  }
+  if (targetPath.includes('?') || targetPath.includes('#')) {
+    fail(`${context.sourceFile}: local image filename must not contain URL delimiters: ${target}`)
+  }
+
+  const sourceRoot = localImageSourceRoot(context)
+  const sourceImage = resolve(dirname(context.sourceFile), targetPath)
+  assertInside(sourceRoot, sourceImage, `${context.sourceFile}: local image ${target}`)
+  if (!existsSync(sourceImage)) fail(`${context.sourceFile}: local image does not exist: ${target}`)
+
+  const entry = lstatSync(sourceImage)
+  if (entry.isSymbolicLink() || !entry.isFile()) {
+    fail(`${context.sourceFile}: local image must be a regular file: ${target}`)
+  }
+  const resolvedRoot = realpathSync(sourceRoot)
+  const resolvedImage = realpathSync(sourceImage)
+  const resolvedSourceRoot = realpathSync(context.sourceRoot)
+  assertInside(resolvedSourceRoot, resolvedRoot, `${context.sourceFile}: local image root`)
+  assertInside(resolvedSourceRoot, resolvedImage, `${context.sourceFile}: local image ${target}`)
+  assertInside(resolvedRoot, resolvedImage, `${context.sourceFile}: local image ${target}`)
+
+  const extension = extname(sourceImage).toLowerCase()
+  if (!localImageExtensions.has(extension)) {
+    fail(`${context.sourceFile}: unsupported local image extension: ${target}`)
+  }
+
+  const contents = readFileSync(sourceImage)
+  const assetName = `${createHash('sha256').update(contents).digest('hex')}${extension}`
+  const assetDirectory = join(context.publicOutput, localImageOutputDirectory)
+  const outputImage = join(assetDirectory, assetName)
+  mkdirSync(assetDirectory, { recursive: true })
+  if (existsSync(outputImage)) {
+    const outputEntry = lstatSync(outputImage)
+    if (outputEntry.isSymbolicLink() || !outputEntry.isFile()) {
+      fail(`Generated local image must be a regular file: ${outputImage}`)
+    }
+    if (!readFileSync(outputImage).equals(contents)) {
+      fail(`Generated local image content does not match its digest: ${outputImage}`)
+    }
+  } else {
+    writeFileSync(outputImage, contents)
+  }
+
+  return `/${localImageOutputDirectory}/${assetName}${suffix}`
+}
+
 function rewriteLinks(markdown, context) {
   let inFence = false
 
@@ -240,11 +378,17 @@ function rewriteLinks(markdown, context) {
       }
       if (inFence || line === '\n' || line === '\r\n') return line
 
-      return line.replace(/(\[[^\]]*\]\()([^\s)]+)([^)]*\))/g, (_whole, open, rawTarget, close) => {
+      return line.replace(/(!?\[[^\]]*\]\()([^\s)]+)([^)]*\))/g, (_whole, open, rawTarget, close) => {
         const target = rawTarget.replaceAll('&amp;', '&')
+        const isImage = open.startsWith('![')
 
         if (target.startsWith('#') || target.startsWith('/') || target.startsWith('mailto:')) {
           return `${open}${rawTarget}${close}`
+        }
+
+        if (isImage) {
+          if (/^[a-z][a-z0-9+.-]*:/i.test(target)) return `${open}${rawTarget}${close}`
+          return `${open}${copyLocalImage(target, context)}${close}`
         }
 
         if (target.startsWith('https://docs.rs/')) {
@@ -856,12 +1000,12 @@ function main() {
   const args = parseArgs(process.argv.slice(2))
   const source = resolve(args.source ?? process.env.DOCS_SOURCE ?? defaultSource)
   const output = resolve(args.output ?? process.env.DOCS_OUTPUT ?? defaultOutput)
-  const staticOutput = resolve(args['static-output'] ?? process.env.DOCS_STATIC_OUTPUT ?? join(appRoot, 'dist', 'docs'))
+  const staticOutput = resolve(args['static-output'] ?? process.env.DOCS_STATIC_OUTPUT ?? defaultStaticOutput)
   const siteUrl = (args['site-url'] ?? process.env.DOCS_SITE_URL ?? 'https://solti.io').replace(/\/$/, '')
   const allowDirty = (args['allow-dirty'] ?? process.env.DOCS_ALLOW_DIRTY ?? 'false') === 'true'
 
   if (!existsSync(source) || !statSync(source).isDirectory()) fail(`Product source does not exist: ${source}`)
-  assertSafeOutputPath(output, source, staticOutput)
+  const { managedOutput } = assertSafeOutputPaths(output, source, staticOutput)
   const worktreeStatus = git(source, 'status', '--porcelain', '--untracked-files=all')
   if (worktreeStatus && !allowDirty) {
     fail('Product source contains uncommitted files; use an exact clean checkout or --allow-dirty true for local preview')
@@ -901,8 +1045,7 @@ function main() {
   if (resolvedRef !== commit) fail(`Source ref ${ref} resolves to ${resolvedRef}, expected ${commit}`)
 
   const navigation = buildNavigation(manifest, docsRoot)
-  rmSync(output, { recursive: true, force: true })
-  mkdirSync(output, { recursive: true })
+  resetDocsOutput(output, managedOutput)
   const publicOutput = join(output, 'public')
   mkdirSync(publicOutput, { recursive: true })
   copyFileSync(join(appRoot, 'src', 'assets', 'logo', 'solti-logo-dark.svg'), join(publicOutput, 'solti-logo-dark.svg'))

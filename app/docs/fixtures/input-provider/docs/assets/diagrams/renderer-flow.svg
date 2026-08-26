@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 120" role="img" aria-labelledby="title description">
+  <title id="title">Renderer flow</title>
+  <desc id="description">A source document becomes a versioned documentation page.</desc>
+  <rect width="320" height="120" rx="16" fill="#f4f7f5"/>
+  <rect x="24" y="34" width="92" height="52" rx="8" fill="#ffffff" stroke="#24713f" stroke-width="3"/>
+  <path d="M132 60h48" fill="none" stroke="#24713f" stroke-width="4" stroke-linecap="round"/>
+  <path d="m172 50 12 10-12 10" fill="none" stroke="#24713f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="200" y="34" width="96" height="52" rx="8" fill="#24713f"/>
+</svg>

@@ -7,4 +7,6 @@ description: Exercise the generic documentation renderer without Cargo.
 
 This fixture verifies the generic input-version path.
 
+![Renderer flow](./assets/diagrams/renderer-flow.svg "Renderer flow")
+
 Open the [complete example](../examples/hello.rs).

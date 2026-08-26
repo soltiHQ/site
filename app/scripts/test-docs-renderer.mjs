@@ -1,9 +1,21 @@
 import { execFileSync, spawnSync } from 'node:child_process'
-import { appendFileSync, cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import {
+  appendFileSync,
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+
+import { writeCatalog } from './prepare-docs.mjs'
 
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const temporaryRoot = mkdtempSync(join(tmpdir(), 'solti-docs-renderer-'))
@@ -11,6 +23,7 @@ const source = join(temporaryRoot, 'source')
 const generatedOutput = join(temporaryRoot, 'generated')
 const renderedOutput = join(temporaryRoot, 'rendered')
 const isolationMarker = 'Hermetic renderer output marker.'
+const outputOwnershipMarker = '.solti-docs-renderer-output'
 const docsEnvironment = {
   DOCS_OUTPUT: generatedOutput,
   DOCS_RENDER_OUTPUT: renderedOutput,
@@ -41,8 +54,33 @@ function requireHtmlMetadata(html, label) {
   }
 }
 
+function spawnPrepare(commit, environment = {}, args = []) {
+  return spawnSync(process.execPath, [
+    'scripts/prepare-docs.mjs',
+    '--source', source,
+    '--version', '0.1.0',
+    '--ref', 'v0.1.0',
+    '--commit', commit,
+    ...args,
+  ], {
+    cwd: appRoot,
+    encoding: 'utf8',
+    env: { ...process.env, ...docsEnvironment, ...environment },
+  })
+}
+
+function requireRejected(result, message, label) {
+  if (result.status === 0 || !result.stderr.includes(message)) {
+    throw new Error(`${label}: renderer did not reject the unsafe path`)
+  }
+}
+
 try {
   cpSync(join(appRoot, 'docs', 'fixtures', 'input-provider'), source, { recursive: true })
+  const sourceImage = join(source, 'docs', 'assets', 'diagrams', 'renderer-flow.svg')
+  const sourceImageContents = readFileSync(sourceImage)
+  const imageAssetName = `${createHash('sha256').update(sourceImageContents).digest('hex')}.svg`
+  const imagePublicTarget = `/docs-assets/${imageAssetName}`
   appendFileSync(join(source, 'docs', 'index.md'), `\n\n${isolationMarker}\n`)
   run('git', ['init', '--quiet'], { cwd: source })
   run('git', ['remote', 'add', 'origin', 'https://github.com/soltiHQ/site.git'], { cwd: source })
@@ -62,10 +100,79 @@ try {
     '--ref', 'v0.1.0',
     '--commit', commit,
   ], { env: docsEnvironment })
+  const ownershipMarker = join(generatedOutput, outputOwnershipMarker)
+  if (!existsSync(ownershipMarker)) throw new Error('Renderer did not mark its generated output as owned')
+
+  run(process.execPath, [
+    'scripts/prepare-docs.mjs',
+    '--source', source,
+    '--version', '0.1.0',
+    '--ref', 'v0.1.0',
+    '--commit', commit,
+  ], { env: docsEnvironment })
+  if (!existsSync(ownershipMarker)) throw new Error('Renderer did not preserve output ownership on rebuild')
+  const generatedImage = join(generatedOutput, 'public', 'docs-assets', imageAssetName)
+  if (!existsSync(generatedImage) || !readFileSync(generatedImage).equals(sourceImageContents)) {
+    throw new Error('Renderer did not copy the local Markdown image into generated public assets')
+  }
+  if (!readFileSync(join(generatedOutput, 'index.md'), 'utf8').includes(
+    `![Renderer flow](${imagePublicTarget} "Renderer flow")`,
+  )) {
+    throw new Error('Renderer did not rewrite the local Markdown image to its generated public URL')
+  }
+
+  const unsafeImageSource = join(temporaryRoot, 'unsafe-image-source')
+  cpSync(source, unsafeImageSource, { recursive: true })
+  appendFileSync(join(unsafeImageSource, 'docs', 'index.md'), '\n![Escaping image](%2e%2e/api.json)\n')
+  run('git', ['add', 'docs/index.md'], { cwd: unsafeImageSource })
+  run('git', [
+    '-c', 'user.name=Solti docs CI',
+    '-c', 'user.email=docs-ci@solti.invalid',
+    'commit', '--quiet', '-m', 'unsafe image fixture',
+  ], { cwd: unsafeImageSource })
+  const unsafeImageCommit = run('git', ['rev-parse', 'HEAD'], { cwd: unsafeImageSource, capture: true })
+  run('git', ['tag', '--force', 'v0.1.0', unsafeImageCommit], { cwd: unsafeImageSource, capture: true })
+  const unsafeImage = spawnPrepare(unsafeImageCommit, {
+    DOCS_OUTPUT: join(temporaryRoot, 'unsafe-image-generated'),
+    DOCS_STATIC_OUTPUT: join(temporaryRoot, 'unsafe-image-rendered'),
+  }, ['--source', unsafeImageSource])
+  requireRejected(
+    unsafeImage,
+    'local image %2e%2e/api.json: path escapes the product repository',
+    'Traversal in local Markdown image',
+  )
+
+  writeCatalog(renderedOutput, {
+    title: 'Renderer fixture documentation',
+    description: 'Versioned renderer fixture documentation.',
+    products: [{
+      id: 'renderer-fixture',
+      title: 'Renderer fixture',
+      description: 'Generic fixture for the documentation renderer.',
+    }],
+  }, 'https://solti.io')
   run('npm', ['run', 'docs:build', '--silent'], { env: docsEnvironment })
 
+  const rootSitemap = join(renderedOutput, 'sitemap.xml')
   const productRoot = join(renderedOutput, 'renderer-fixture')
   const lineRoot = join(productRoot, '0.1')
+  const renderedImage = join(lineRoot, 'docs-assets', imageAssetName)
+  if (!existsSync(renderedImage) || !readFileSync(renderedImage).equals(sourceImageContents)) {
+    throw new Error('VitePress did not publish the local Markdown image with the versioned guide')
+  }
+  const productSitemap = join(productRoot, 'sitemap.xml')
+  const lineSitemap = join(lineRoot, 'sitemap.xml')
+  if (!readFileSync(rootSitemap, 'utf8').includes(
+    '<loc>https://solti.io/docs/renderer-fixture/sitemap.xml</loc>',
+  )) {
+    throw new Error('Root sitemap does not reference the product-level sitemap')
+  }
+  if (!existsSync(productSitemap) || !existsSync(lineSitemap)) {
+    throw new Error('Missing product-level or compatibility-line sitemap')
+  }
+  if (readFileSync(productSitemap, 'utf8') !== readFileSync(lineSitemap, 'utf8')) {
+    throw new Error('Product-level sitemap is not an exact alias of the compatibility-line sitemap')
+  }
   const rendered = join(lineRoot, 'index.html')
   if (!existsSync(rendered)) throw new Error(`Missing rendered fixture: ${rendered}`)
   const logo = join(lineRoot, 'solti-logo-dark.svg')
@@ -112,6 +219,12 @@ try {
   if (!renderedIndex.includes(isolationMarker)) {
     throw new Error('Renderer did not build pages from DOCS_OUTPUT')
   }
+  const renderedImageUrl = `/docs/renderer-fixture/0.1${imagePublicTarget}`
+  if (!renderedIndex.includes(`src="${renderedImageUrl}"`)
+    || !renderedIndex.includes('alt="Renderer flow"')
+    || renderedIndex.includes('/blob/v0.1.0/docs/assets/diagrams/renderer-flow.svg')) {
+    throw new Error('Rendered guide does not use the versioned local Markdown image')
+  }
   if (!renderedIndex.includes('/docs/renderer-fixture/0.1/examples/hello')
     || /href="https:\/\/github\.com\/soltiHQ\/site\/blob\/[^"]+\/examples\/hello\.rs"/.test(renderedIndex)) {
     throw new Error('Guide example link does not stay inside the rendered documentation')
@@ -153,6 +266,38 @@ try {
   if (unsafe.status === 0 || !unsafe.stderr.includes('Docs output must not overlap the product source')) {
     throw new Error('Renderer did not reject an output path overlapping the product source')
   }
+
+  const unownedOutput = join(temporaryRoot, 'unowned-output')
+  const unownedSentinel = join(unownedOutput, 'keep.txt')
+  mkdirSync(unownedOutput)
+  writeFileSync(unownedSentinel, 'do not delete\n')
+  const unowned = spawnPrepare(commit, { DOCS_OUTPUT: unownedOutput })
+  requireRejected(
+    unowned,
+    'Refusing to remove unowned docs output directory',
+    'Unowned DOCS_OUTPUT',
+  )
+  if (readFileSync(unownedSentinel, 'utf8') !== 'do not delete\n') {
+    throw new Error('Renderer changed data inside an unowned DOCS_OUTPUT')
+  }
+
+  const sourceBeforeStaticCheck = readFileSync(join(source, 'docs', 'index.md'), 'utf8')
+  const sourceStatic = spawnPrepare(commit, { DOCS_STATIC_OUTPUT: source })
+  requireRejected(
+    sourceStatic,
+    'Docs static output must not overlap the product source',
+    'Source-overlapping DOCS_STATIC_OUTPUT',
+  )
+  if (readFileSync(join(source, 'docs', 'index.md'), 'utf8') !== sourceBeforeStaticCheck) {
+    throw new Error('Renderer changed product source through DOCS_STATIC_OUTPUT')
+  }
+
+  const siteStatic = spawnPrepare(commit, { DOCS_STATIC_OUTPUT: appRoot })
+  requireRejected(
+    siteStatic,
+    'Docs static output inside the site repository must stay under',
+    'Site-overlapping DOCS_STATIC_OUTPUT',
+  )
 } finally {
   rmSync(temporaryRoot, { recursive: true, force: true })
 }
