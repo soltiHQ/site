@@ -1,0 +1,21 @@
+@mixin styles {
+  .content-view {
+    --title-aside: clamp(1.5rem, 2.3vw, 2.25rem);
+    --title-section: clamp(2.2rem, 4.8vw, 4.8rem);
+    --title-display: clamp(3rem, 6.48vw, 6.48rem);
+
+    position: relative;
+    min-height: 0;
+    overflow-x: clip;
+    padding-top: 0;
+  }
+
+  .content-view__stack,
+  .content-view__composition,
+  .content-view__use-cases,
+  .content-view__proof,
+  .content-view__fit,
+  .content-view__community {
+    scroll-margin-top: calc(var(--layout-header-height) + var(--sp-3));
+  }
+}

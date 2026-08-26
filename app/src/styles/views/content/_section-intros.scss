@@ -1,0 +1,32 @@
+@mixin styles {
+  .content-view__composition-eyebrow,
+  .content-view__use-cases-eyebrow,
+  .content-view__fit-eyebrow {
+    color: var(--color-accent-strong);
+    font-family: var(--font-mono);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+
+  .content-view__use-cases-title,
+  .content-view__fit-title {
+    max-width: 12ch;
+    font-size: var(--title-section);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: -0.035em;
+    line-height: 0.98;
+  }
+
+  .content-view__use-cases-lede,
+  .content-view__fit-lede {
+    max-width: 39rem;
+    padding-bottom: var(--sp-2);
+    font-size: clamp(var(--font-size-body), 1.35vw, 1.2rem);
+    line-height: 1.6;
+  }
+
+  .content-view__use-cases-title {
+    max-width: 16ch;
+  }
+}

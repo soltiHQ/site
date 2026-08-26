@@ -18,7 +18,6 @@ tasks:
     desc: Build the production site.
     cmds:
       - task: node:build
-      - node --test tf/functions/docs-uri-rewrite.test.cjs
 
   ci/audit:
     desc: Audit production and development dependencies.

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
-import { createRequire } from 'node:module'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { defineConfig, type DefaultTheme } from 'vitepress'
 
@@ -39,11 +39,7 @@ const renderedRoot = resolve(
 )
 const manifest = JSON.parse(readFileSync(resolve(generatedRoot, 'site.json'), 'utf8')) as DocsManifest
 const productBase = `/docs/${manifest.product}/${manifest.line}/`
-const vitepressRequire = createRequire(import.meta.resolve('vitepress'))
-const vueEntry = vitepressRequire.resolve('vue/dist/vue.runtime.esm-bundler.js')
-const vueServerRenderer = vitepressRequire.resolve(
-  '@vue/server-renderer/dist/server-renderer.esm-bundler.js',
-)
+const vuePackageRoot = dirname(fileURLToPath(import.meta.resolve('vue/package.json')))
 
 const sidebar: DefaultTheme.Sidebar = {
   '/': manifest.navigation.map((group) => ({
@@ -94,11 +90,8 @@ export default defineConfig({
   },
   vite: {
     resolve: {
-      alias: {
-        'vue/server-renderer': vueServerRenderer,
-        vue: vueEntry,
-      },
-      dedupe: ['vue'],
+      // Generated pages may live outside app; resolve their Vue imports from the project.
+      alias: { vue: vuePackageRoot },
     },
   },
   themeConfig: {

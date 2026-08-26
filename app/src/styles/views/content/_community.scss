@@ -1,0 +1,105 @@
+@use '../../tools';
+
+@mixin styles {
+  .content-view__community {
+    border-top: var(--stroke-hair) solid var(--color-border);
+    padding-block: clamp(5rem, 8vw, 8rem);
+    background: var(--color-canvas);
+  }
+
+  .content-view__community-inner {
+    display: grid;
+    gap: clamp(var(--sp-6), 4vw, var(--sp-8));
+  }
+
+  .content-view__community-commons {
+    display: grid;
+    min-width: 0;
+    align-items: center;
+    grid-template-columns: minmax(8rem, 0.28fr) minmax(0, 1fr) auto;
+    gap: var(--sp-4) clamp(var(--sp-5), 4vw, var(--sp-8));
+    padding-block: var(--sp-6);
+    border-block: var(--stroke-hair) solid var(--color-border);
+  }
+
+  .content-view__community-commons-eyebrow {
+    color: var(--color-accent-strong);
+    font-family: var(--font-mono);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+
+  .content-view__community-commons-copy {
+    display: grid;
+    min-width: 0;
+    gap: var(--sp-2);
+  }
+
+  .content-view__community-commons-title {
+    font-size: var(--title-aside);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+  }
+
+  .content-view__community-commons-body {
+    max-width: 50rem;
+    line-height: 1.6;
+  }
+
+  .content-view__community-commons > .c-button {
+    justify-self: start;
+  }
+
+  .content-view__community-open-source {
+    @include tools.inverse-context;
+
+    --color-action-primary-hover: var(--color-accent-on-dark);
+    --color-action-primary-hover-text: var(--color-canvas-inverse);
+
+    display: grid;
+    align-items: end;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: clamp(2.5rem, 7vw, 7rem);
+    padding: clamp(var(--sp-7), 6vw, var(--sp-8));
+    border-radius: var(--radius-card);
+    background: var(--color-canvas-inverse);
+  }
+
+  .content-view__community-open-source-copy {
+    display: grid;
+    max-width: 48rem;
+    gap: var(--sp-4);
+  }
+
+  .content-view__community-open-source-eyebrow {
+    color: var(--color-accent-on-dark);
+    font-family: var(--font-mono);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+  }
+
+  .content-view__community-open-source-title {
+    max-width: 16ch;
+    color: var(--color-text-inverse);
+    font-size: var(--title-section);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: -0.035em;
+    line-height: 1;
+  }
+
+  .content-view__community-open-source-body {
+    max-width: 44rem;
+    line-height: 1.6;
+  }
+
+  .content-view__community-open-source-actions {
+    display: flex;
+    min-width: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--sp-3);
+  }
+}
